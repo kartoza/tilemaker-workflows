@@ -19,7 +19,7 @@ This will create ``coastline.mbtiles`` which contains all the coastlines later.
 This is optimised for performance:
 
 ```
-process_malta.sh
+./process_malta.sh
 ```
 
 You can then drag and drop the resulting mbtiles file into QGIS.
@@ -31,7 +31,7 @@ You can then drag and drop the resulting mbtiles file into QGIS.
 This is optimised for performance:
 
 ```
-process_planet.sh
+./process_planet.sh
 ```
 
 During processing, it will consume around 250GB of temporary storage in the
