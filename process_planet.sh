@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
-if test -f "planet-latest-optimised.osm.pbf"; then
+./get_data.sh
+
+if test -f "planet-latest-optimized.osm.pbf"; then
   echo "planet.pbf file exists...."
 else
   echo "planet.pbf does not exist."
@@ -12,6 +14,7 @@ time tilemaker \
   --config config.json \
   --process process.lua \
   --fast \
+  --store ${PWD}/work \
   --no-compress-ways \
   --no-compress-nodes \
   planet-latest-optimized.osm.pbf planet.mbtiles
