@@ -12,6 +12,7 @@ with pkgs;
 mkShell {
   buildInputs = [
     mbtileserver
+    osmium-tool
     mapnik
   ];
 
