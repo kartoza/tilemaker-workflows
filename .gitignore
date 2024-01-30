@@ -1,0 +1,5 @@
+*.mbtiles
+*.pbf
+work/*
+coastline/*
+landcover/*
