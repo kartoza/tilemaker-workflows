@@ -17,6 +17,13 @@
       "paint": {"fill-color": "rgba(199, 236, 255, 1)"}
     },
     {
+      "id": "Landuse",
+      "type": "fill",
+      "source": "Planet",
+      "source-layer": "landuse",
+      "paint": {"fill-color": "rgba(241, 241, 241, 1)", "fill-opacity": 0.5}
+    },
+    {
       "id": "Water",
       "type": "fill",
       "source": "Planet",
@@ -30,6 +37,20 @@
       "source": "Planet",
       "source-layer": "transportation",
       "paint": {"line-color": "rgba(235, 235, 235, 1)"}
+    },
+    {
+      "id": "Boundary",
+      "type": "line",
+      "source": "Planet",
+      "source-layer": "boundary",
+      "paint": {"line-width": 3, "line-color": "rgba(11, 12, 15, 0.14)"}
+    },
+    {
+      "id": "Place Name",
+      "type": "symbol",
+      "source": "Planet",
+      "source-layer": "place",
+      "layout": {"text-field": "name:latin"}
     }
   ],
   "id": "15j4u53gq"
