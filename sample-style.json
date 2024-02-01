@@ -1,0 +1,36 @@
+{
+  "version": 8,
+  "name": "Empty Style",
+  "metadata": {"maputnik:renderer": "mbgljs"},
+  "sources": {
+    "Planet": {"type": "vector", "url": "http://localhost:8000/services/planet"}
+  },
+  "sprite": "",
+  "glyphs": "https://orangemug.github.io/font-glyphs/glyphs/{fontstack}/{range}.pbf",
+  "layers": [
+    {
+      "id": "Ocean",
+      "type": "fill",
+      "source": "Planet",
+      "source-layer": "water",
+      "filter": ["all", ["==", "class", "ocean"]],
+      "paint": {"fill-color": "rgba(199, 236, 255, 1)"}
+    },
+    {
+      "id": "Water",
+      "type": "fill",
+      "source": "Planet",
+      "source-layer": "water",
+      "filter": ["all", ["!=", "class", "ocean"]],
+      "paint": {"fill-color": "rgba(190, 236, 255, 1)"}
+    },
+    {
+      "id": "Roads",
+      "type": "line",
+      "source": "Planet",
+      "source-layer": "transportation",
+      "paint": {"line-color": "rgba(235, 235, 235, 1)"}
+    }
+  ],
+  "id": "15j4u53gq"
+}
