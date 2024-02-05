@@ -1,0 +1,28 @@
+{
+  "version": 8,
+  "name": "OSM",
+  "metadata": {"maputnik:renderer": "mlgljs"},
+  "sources": {
+    "osm": {"type": "vector", "url": "http://localhost:8000/services/planet"}
+  },
+  "sprite": "",
+  "glyphs": "https://orangemug.github.io/font-glyphs/glyphs/{fontstack}/{range}.pbf",
+  "layers": [
+    {
+      "id": "water",
+      "type": "fill",
+      "source": "osm",
+      "source-layer": "water",
+      "filter": ["all", ["==", "class", "ocean"]],
+      "paint": {"fill-color": "rgba(164, 253, 247, 1)"}
+    },
+    {
+      "id": "rail",
+      "type": "line",
+      "source": "osm",
+      "source-layer": "transportation",
+      "filter": ["all", ["==", "class", "rail"]]
+    }
+  ],
+  "id": "4znnily"
+}

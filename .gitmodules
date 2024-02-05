@@ -1,0 +1,3 @@
+[submodule "maputnik"]
+	path = maputnik
+	url = git@github.com:maplibre/maputnik.git

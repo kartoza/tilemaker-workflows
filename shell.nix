@@ -14,6 +14,7 @@ mkShell {
     mbtileserver
     osmium-tool
     mapnik
+    nodejs
   ];
 
   # DIRENV_LOG_FORMAT to reduce direnv verbosity
