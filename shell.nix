@@ -25,6 +25,7 @@ mkShell {
     echo "💻️ mbtileserver -d ."
     echo "Then you can find the tiles here:"
     echo "🔗 http://localhost:8000/services/"
+    echo "📒 Please see the README.md"
     echo "------------------------------------------------------------------"
   '';
 
