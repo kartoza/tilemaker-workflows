@@ -17,11 +17,26 @@
       "paint": {"fill-color": "rgba(164, 253, 247, 1)"}
     },
     {
-      "id": "rail",
+      "id": "rail-left",
       "type": "line",
       "source": "osm",
       "source-layer": "transportation",
-      "filter": ["all", ["==", "class", "rail"]]
+      "filter": ["all", ["==", "class", "rail"]],
+      "paint": {"line-offset": 3}
+    },
+    {
+      "id": "rail-right",
+      "type": "line",
+      "source": "osm",
+      "source-layer": "transportation",
+      "filter": ["all", ["==", "class", "rail"]],
+      "paint": {"line-offset": 0}
+    },
+    {
+      "id": "roads",
+      "type": "line",
+      "source": "osm",
+      "source-layer": "transportation"
     }
   ],
   "id": "4znnily"
