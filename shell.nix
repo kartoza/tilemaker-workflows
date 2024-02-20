@@ -19,6 +19,8 @@ mkShell {
     vim
     unzip
     wget
+    byobu
+    gotop
   ];
 
   # DIRENV_LOG_FORMAT to reduce direnv verbosity
