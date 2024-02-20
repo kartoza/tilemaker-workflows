@@ -5,12 +5,13 @@ let
   # If you want use a different version, go to nix packages search, and find the 
   # github hash of the version you want to be using, then replace in the URL below.
   #
-  nixpkgs = builtins.fetchTarball "https://github.com/NixOS/nixpkgs/archive/f4a8d6d5324c327dcc2d863eb7f3cc06ad630df4.tar.gz";
+  nixpkgs = builtins.fetchTarball "https://github.com/NixOS/nixpkgs/archive/e0da498ad77ac8909a980f07eff060862417ccf7.tar.gz";
   pkgs = import nixpkgs { config = { }; overlays = [ ]; };
 in
 with pkgs;
 mkShell {
   buildInputs = [
+    tilemaker
     mbtileserver
     osmium-tool
     mapnik
