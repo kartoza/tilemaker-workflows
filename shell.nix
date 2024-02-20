@@ -15,6 +15,9 @@ mkShell {
     osmium-tool
     mapnik
     nodejs
+    vim
+    unzip
+    wget
   ];
 
   # DIRENV_LOG_FORMAT to reduce direnv verbosity
