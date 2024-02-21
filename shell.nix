@@ -16,6 +16,7 @@ mkShell {
     osmium-tool
     mapnik
     nodejs
+    git
     vim
     unzip
     wget
