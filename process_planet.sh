@@ -17,8 +17,8 @@ available_ram_gb=$(awk '/MemAvailable/ {printf "%d", $2/1024/1024}' /proc/meminf
 echo "Available RAM: ${available_ram_gb}GB"
 
 store_args=()
-if [ "$available_ram_gb" -lt 100 ]; then
-  echo "Insufficient RAM for in-memory processing (need ~100GB, have ${available_ram_gb}GB)"
+if [ "$available_ram_gb" -lt 64 ]; then
+  echo "Insufficient RAM for in-memory processing (need ~64GB, have ${available_ram_gb}GB)"
   echo "Using disk-backed store at ${PWD}/work"
   mkdir -p work
   store_args=(--store "${PWD}/work")
