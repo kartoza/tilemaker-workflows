@@ -1,5 +1,22 @@
+# Generated tile data
 *.mbtiles
 *.pbf
+
+# Working directories
 work/*
 coastline/*
-landcover/*
+
+# Nix
+result
+result-*
+
+# Direnv
+.direnv/
+
+# Editor
+.*.swp
+.*.swo
+*~
+
+# Logs
+PROMPT.log
