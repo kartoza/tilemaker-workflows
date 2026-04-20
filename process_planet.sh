@@ -14,7 +14,7 @@ time tilemaker \
   --config config.json \
   --process process.lua \
   --fast \
-  --store ${PWD}/work \
+  --store "${PWD}/work" \
   --no-compress-ways \
   --no-compress-nodes \
   planet-latest-optimized.osm.pbf planet.mbtiles
