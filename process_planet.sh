@@ -1,4 +1,13 @@
 #!/usr/bin/env bash
+
+# Parse args before sourcing common.sh
+for arg in "$@"; do
+  case "$arg" in
+    --memory) export STORE_MODE="memory" ;;
+    --disk)   export STORE_MODE="disk" ;;
+  esac
+done
+
 source ./common.sh
 
 ensure_geodata
