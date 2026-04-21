@@ -8,6 +8,7 @@ for arg in "$@"; do
   esac
 done
 
+# shellcheck disable=SC1091
 source ./common.sh
 
 ensure_geodata
@@ -30,9 +31,17 @@ fi
 
 detect_store_strategy
 
+# Planet builds use compressed nodes/ways to fit in RAM (~40GB vs ~80GB+)
+# Country builds keep --no-compress-* for maximum speed since they fit easily
+PLANET_ARGS=(
+  --config config.json
+  --process process.lua
+  --fast
+)
+
 echo "Processing planet..."
 time tilemaker \
-  "${TILEMAKER_COMMON_ARGS[@]}" \
+  "${PLANET_ARGS[@]}" \
   "${STORE_ARGS[@]}" \
   "$PBF_OPT" "${OUTPUT_DIR}/planet.mbtiles"
 
