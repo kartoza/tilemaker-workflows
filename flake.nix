@@ -178,13 +178,14 @@
               ])
               ''
                 #!/usr/bin/env bash
-                ./get_data.sh
+                source ./common.sh
+                ensure_geodata
                 echo "Generating coastline tiles..."
-                time tilemaker --output coastline.mbtiles \
+                time tilemaker --output "${OUTPUT_DIR}/coastline.mbtiles" \
                   --bbox -180,-85,180,85 \
                   --process process-coastline.lua \
                   --config config-coastline.json
-                echo "Done! Output: coastline.mbtiles"
+                echo "Done! Output: ''${OUTPUT_DIR}/coastline.mbtiles"
               '';
 
           lint =

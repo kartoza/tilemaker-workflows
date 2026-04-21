@@ -1,10 +1,12 @@
 # Generated tile data
+output/
 *.mbtiles
 *.pbf
 
 # Working directories
-work/*
-coastline/*
+work/
+downloads/
+coastline/
 
 # Nix
 result

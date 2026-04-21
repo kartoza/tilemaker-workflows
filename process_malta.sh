@@ -1,10 +1,20 @@
 #!/usr/bin/env bash
+source ./common.sh
 
-curl -OL https://download.geofabrik.de/europe/malta-latest.osm.pbf
+ensure_geodata
+
+PBF="${DOWNLOAD_DIR}/malta-latest.osm.pbf"
+
+if test -f "$PBF"; then
+  echo "Malta PBF already exists, skipping download..."
+else
+  echo "Downloading Malta extract..."
+  curl -L -o "$PBF" https://download.geofabrik.de/europe/malta-latest.osm.pbf
+fi
+
+echo "Processing Malta..."
 time tilemaker \
-  --config config.json \
-  --process process.lua \
-  --fast \
-  --no-compress-ways \
-  --no-compress-nodes \
-  malta-latest.osm.pbf malta.mbtiles
+  "${TILEMAKER_COMMON_ARGS[@]}" \
+  "$PBF" "${OUTPUT_DIR}/malta.mbtiles"
+
+echo "Done! Output: ${OUTPUT_DIR}/malta.mbtiles"

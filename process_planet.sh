@@ -1,36 +1,30 @@
 #!/usr/bin/env bash
+source ./common.sh
 
-./get_data.sh
+ensure_geodata
 
-if test -f "planet-latest-optimized.osm.pbf"; then
-  echo "planet-latest-optimized.osm.pbf already exists, skipping download..."
+PBF_RAW="${DOWNLOAD_DIR}/planet-latest.osm.pbf"
+PBF_OPT="${DOWNLOAD_DIR}/planet-latest-optimized.osm.pbf"
+
+if test -f "$PBF_OPT"; then
+  echo "Optimised planet PBF already exists, skipping download..."
 else
-  echo "Downloading planet-latest.osm.pbf..."
-  curl -OL https://planet.openstreetmap.org/pbf/planet-latest.osm.pbf
+  if test -f "$PBF_RAW"; then
+    echo "Raw planet PBF already exists, skipping download..."
+  else
+    echo "Downloading planet-latest.osm.pbf..."
+    curl -L -o "$PBF_RAW" https://planet.openstreetmap.org/pbf/planet-latest.osm.pbf
+  fi
   echo "Optimising with osmium..."
-  time osmium cat -f pbf planet-latest.osm.pbf -o planet-latest-optimized.osm.pbf
+  time osmium cat -f pbf "$PBF_RAW" -o "$PBF_OPT"
 fi
 
-# Check available RAM to decide between in-memory or disk-backed processing
-# Planet processing needs ~100GB RAM to run entirely in memory
-available_ram_gb=$(awk '/MemAvailable/ {printf "%d", $2/1024/1024}' /proc/meminfo)
-echo "Available RAM: ${available_ram_gb}GB"
+detect_store_strategy
 
-store_args=()
-if [ "$available_ram_gb" -lt 64 ]; then
-  echo "Insufficient RAM for in-memory processing (need ~64GB, have ${available_ram_gb}GB)"
-  echo "Using disk-backed store at ${PWD}/work"
-  mkdir -p work
-  store_args=(--store "${PWD}/work")
-else
-  echo "Sufficient RAM available — processing entirely in memory"
-fi
-
+echo "Processing planet..."
 time tilemaker \
-  --config config.json \
-  --process process.lua \
-  --fast \
-  --no-compress-ways \
-  --no-compress-nodes \
-  "${store_args[@]}" \
-  planet-latest-optimized.osm.pbf planet.mbtiles
+  "${TILEMAKER_COMMON_ARGS[@]}" \
+  "${STORE_ARGS[@]}" \
+  "$PBF_OPT" "${OUTPUT_DIR}/planet.mbtiles"
+
+echo "Done! Output: ${OUTPUT_DIR}/planet.mbtiles"
