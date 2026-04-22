@@ -71,15 +71,33 @@ else
     echo "  Downloaded ${font}"
   done
 
-  # Generate cursive fonts from Google Fonts TTFs using fontnik
+  # Generate display/cursive fonts from Google Fonts TTFs using fontnik
   if command -v npx &>/dev/null; then
     for fontinfo in "dancingscript/DancingScript%5Bwght%5D.ttf:Dancing Script Regular" \
                     "kalam/Kalam-Regular.ttf:Kalam Regular" \
-                    "kalam/Kalam-Bold.ttf:Kalam Bold"; do
+                    "kalam/Kalam-Bold.ttf:Kalam Bold" \
+                    "permanentmarker/PermanentMarker-Regular.ttf:Permanent Marker Regular" \
+                    "bangers/Bangers-Regular.ttf:Bangers Regular" \
+                    "orbitron/static/Orbitron-Regular.ttf:Orbitron Regular" \
+                    "orbitron/static/Orbitron-Bold.ttf:Orbitron Bold" \
+                    "audiowide/Audiowide-Regular.ttf:Audiowide Regular" \
+                    "amaticsc/AmaticSC-Regular.ttf:Amatic SC Regular" \
+                    "amaticsc/AmaticSC-Bold.ttf:Amatic SC Bold" \
+                    "caveat/static/Caveat-Regular.ttf:Caveat Regular" \
+                    "caveat/static/Caveat-Bold.ttf:Caveat Bold" \
+                    "patrickhand/PatrickHand-Regular.ttf:Patrick Hand Regular" \
+                    "shadowsintolight/ShadowsIntoLight.ttf:Shadows Into Light Regular" \
+                    "rajdhani/Rajdhani-Regular.ttf:Rajdhani Regular" \
+                    "rajdhani/Rajdhani-Bold.ttf:Rajdhani Bold" \
+                    "lobster/Lobster-Regular.ttf:Lobster Regular" \
+                    "courgette/Courgette-Regular.ttf:Courgette Regular" \
+                    "ubuntumono/UbuntuMono-Regular.ttf:Ubuntu Mono Regular" \
+                    "specialelite/SpecialElite-Regular.ttf:Special Elite Regular"; do
       urlpath="${fontinfo%%:*}"
       fontname="${fontinfo##*:}"
       ttf="/tmp/${fontname}.ttf"
-      curl -sL "https://github.com/google/fonts/raw/main/ofl/${urlpath}" -o "${ttf}"
+      curl -sfL "https://github.com/google/fonts/raw/main/ofl/${urlpath}" -o "${ttf}" \
+        || curl -sfL "https://github.com/google/fonts/raw/main/apache/${urlpath}" -o "${ttf}"
       mkdir -p "fonts/${fontname}"
       node -e "
         const fontnik = require('fontnik');

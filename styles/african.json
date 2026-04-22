@@ -1378,7 +1378,7 @@
           ]
         ],
         "text-font": [
-          "Noto Sans Regular"
+          "Caveat Regular"
         ],
         "text-size": [
           "interpolate",
@@ -1435,7 +1435,7 @@
           ]
         ],
         "text-font": [
-          "Noto Sans Regular"
+          "Caveat Regular"
         ],
         "text-size": 10,
         "text-max-angle": 30,
@@ -1466,7 +1466,7 @@
           ]
         ],
         "text-font": [
-          "Noto Sans Italic"
+          "Caveat Regular"
         ],
         "text-size": 11
       },
@@ -1495,7 +1495,7 @@
           ]
         ],
         "text-font": [
-          "Noto Sans Regular"
+          "Caveat Regular"
         ],
         "text-size": 10,
         "text-offset": [
@@ -1548,7 +1548,7 @@
           ]
         ],
         "text-font": [
-          "Noto Sans Regular"
+          "Caveat Regular"
         ],
         "text-size": 10,
         "text-offset": [
@@ -1586,7 +1586,7 @@
           ]
         ],
         "text-font": [
-          "Noto Sans Regular"
+          "Caveat Regular"
         ],
         "text-size": 10,
         "text-offset": [
@@ -1611,7 +1611,7 @@
       "layout": {
         "text-field": "{housenumber}",
         "text-font": [
-          "Noto Sans Regular"
+          "Caveat Regular"
         ],
         "text-size": 9
       },
@@ -1646,7 +1646,7 @@
           ]
         ],
         "text-font": [
-          "Noto Sans Bold"
+          "Amatic SC Bold"
         ],
         "text-size": [
           "interpolate",
@@ -1658,9 +1658,9 @@
           ],
           1,
           10,
-          4,
-          16,
           6,
+          16,
+          8,
           22
         ],
         "text-transform": "uppercase",
@@ -1698,7 +1698,7 @@
           ]
         ],
         "text-font": [
-          "Noto Sans Regular"
+          "Amatic SC Regular"
         ],
         "text-size": [
           "interpolate",
@@ -1708,9 +1708,9 @@
           [
             "zoom"
           ],
-          4,
+          6,
           9,
-          8,
+          11,
           14
         ],
         "text-transform": "uppercase",
@@ -1747,7 +1747,7 @@
           ]
         ],
         "text-font": [
-          "Noto Sans Bold"
+          "Amatic SC Bold"
         ],
         "text-size": [
           "interpolate",
@@ -1757,11 +1757,11 @@
           [
             "zoom"
           ],
-          4,
+          6,
           11,
-          8,
+          11,
           17,
-          12,
+          17,
           22
         ],
         "text-max-width": 8
@@ -1796,7 +1796,7 @@
           ]
         ],
         "text-font": [
-          "Noto Sans Regular"
+          "Amatic SC Regular"
         ],
         "text-size": [
           "interpolate",
@@ -1806,9 +1806,9 @@
           [
             "zoom"
           ],
-          7,
           10,
-          12,
+          10,
+          17,
           16
         ],
         "text-max-width": 8
@@ -1843,7 +1843,7 @@
           ]
         ],
         "text-font": [
-          "Noto Sans Regular"
+          "Amatic SC Regular"
         ],
         "text-size": [
           "interpolate",
@@ -1853,9 +1853,9 @@
           [
             "zoom"
           ],
-          10,
-          10,
           14,
+          10,
+          20,
           14
         ],
         "text-max-width": 8
@@ -1903,9 +1903,9 @@
           ]
         ],
         "text-font": [
-          "Noto Sans Regular"
+          "Amatic SC Regular"
         ],
-        "text-size": 11,
+        "text-size": 15.399999999999999,
         "text-max-width": 8
       },
       "paint": {
