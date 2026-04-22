@@ -103,17 +103,75 @@ The workflow:
 
 ### Tile Serving
 
-Serve any `.mbtiles` files in the project directory:
+Serve any `.mbtiles` files in the output directory:
 
 ```bash
-nix run .#serve
+nix run .#serve     # Start mbtileserver on port 8000
+nix run .#viewer    # Serve web viewer & styles on port 8001
 ```
 
 Browse the service list at http://localhost:8000/services/
 
-Click an individual service for its TileJSON metadata. The map preview shows unstyled tiles interactively.
-
 ![mbtileserver running](img/run_server.png)
+
+### Viewing Tiles
+
+#### Web Viewer
+
+Open the built-in MapLibre GL viewer with multiple styles:
+
+```
+http://localhost:8001/viewer.html
+```
+
+The viewer includes a style switcher with 6 themes: Classic, Neon, Muted, African, Psychedelic, and Sketch.
+
+#### QGIS
+
+Add tiles as a **Vector Tile** layer in QGIS:
+
+1. **Layer** → **Add Layer** → **Add Vector Tile Layer**
+2. Click **New Generic Connection**
+3. Set the fields:
+   - **Name:** `Planet Tiles`
+   - **URL:** `http://localhost:8000/services/planet/tiles/{z}/{x}/{y}.pbf`
+   - **Min Zoom:** `0`
+   - **Max Zoom:** `14`
+   - **Style URL:** `http://localhost:8001/styles/classic.json`
+4. Click **OK**, then **Add**
+
+Available styles (use any as the Style URL):
+
+| Style | URL | Description |
+|-------|-----|-------------|
+| Classic | `http://localhost:8001/styles/classic.json` | Warm natural tones |
+| Neon | `http://localhost:8001/styles/neon.json` | Dark cyberpunk |
+| Muted | `http://localhost:8001/styles/muted.json` | Analysis backdrop |
+| African | `http://localhost:8001/styles/african.json` | Vibrant earth tones |
+| Psychedelic | `http://localhost:8001/styles/psychedelic.json` | Bold saturated colours |
+| Sketch | `http://localhost:8001/styles/sketch.json` | Pencil on aged paper |
+
+> **Note:** Both `nix run .#serve` (port 8000) and `nix run .#viewer` (port 8001) must be running for QGIS style URLs to work.
+
+#### Embedding in Web Pages
+
+Use the style JSON files directly with MapLibre GL JS:
+
+```html
+<script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
+<link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet" />
+<div id="map" style="width:100%;height:400px;"></div>
+<script>
+new maplibregl.Map({
+  container: "map",
+  style: "http://localhost:8001/styles/classic.json",
+  center: [0, 20],
+  zoom: 2
+});
+</script>
+```
+
+For production, host the style JSON and update the `tiles` URL in the style file to point to your public tile server.
 
 ### Style Editing with Maputnik
 
@@ -146,6 +204,7 @@ Then:
 | `nix run .#processPlanet` | Generate planet-scale vector tiles |
 | `nix run .#coastline` | Generate coastline/landcover tiles |
 | `nix run .#serve` | Start mbtileserver on port 8000 |
+| `nix run .#viewer` | Serve web viewer & style JSON files on port 8001 |
 | `nix run .#maputnik` | Launch Maputnik style editor |
 | `nix run .#lint` | Run shellcheck + luacheck |
 | `nix fmt` | Format Nix files (nixfmt-rfc-style) |
@@ -205,8 +264,14 @@ tilemaker-workflows/
 ├── process_planet.sh         # Planet-scale tile workflow
 ├── run_server.sh             # mbtileserver launcher
 ├── run_maputnik_editor.sh    # Maputnik editor launcher
+├── viewer.html               # MapLibre GL viewer with style switcher
 ├── styles/
-│   └── osm.json              # Sample MapLibre GL style
+│   ├── classic.json          # Warm natural tones style
+│   ├── neon.json             # Dark cyberpunk style
+│   ├── muted.json            # Muted analysis backdrop style
+│   ├── african.json          # Vibrant earth tones style
+│   ├── psychedelic.json      # Bold saturated colours style
+│   └── sketch.json           # Pencil on aged paper style
 ├── landcover/                # Natural Earth shapefiles
 ├── img/                      # Documentation screenshots
 └── maputnik/                 # MapLibre Maputnik (git submodule)
@@ -215,7 +280,7 @@ tilemaker-workflows/
 **Data flow:**
 
 ```
-OSM PBF → [osmium optimise] → tilemaker (Lua + JSON config) → .mbtiles → mbtileserver → MapLibre/Maputnik
+OSM PBF → [osmium optimise] → tilemaker (Lua + JSON config) → .mbtiles → mbtileserver → styles/*.json → MapLibre/QGIS/Maputnik
 ```
 
 ---
