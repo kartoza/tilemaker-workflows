@@ -54,3 +54,50 @@ else
   rm water-polygons-split-4326.zip
   cd ../ || exit
 fi
+
+# Map viewer fonts (Noto Sans from demotiles, cursive from Google Fonts via fontnik)
+if test -f "fonts/Noto Sans Regular/0-255.pbf"; then
+  echo "Viewer fonts already exist."
+else
+  echo "Downloading viewer font glyphs..."
+  for font in "Noto Sans Regular" "Noto Sans Bold" "Noto Sans Italic"; do
+    mkdir -p "fonts/${font}"
+    encoded=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${font}'))")
+    for start in $(seq 0 256 65280); do
+      end=$((start + 255))
+      curl -sf "https://demotiles.maplibre.org/font/${encoded}/${start}-${end}.pbf" \
+        -o "fonts/${font}/${start}-${end}.pbf" 2>/dev/null || rm -f "fonts/${font}/${start}-${end}.pbf"
+    done
+    echo "  Downloaded ${font}"
+  done
+
+  # Generate cursive fonts from Google Fonts TTFs using fontnik
+  if command -v npx &>/dev/null; then
+    for fontinfo in "dancingscript/DancingScript%5Bwght%5D.ttf:Dancing Script Regular" \
+                    "kalam/Kalam-Regular.ttf:Kalam Regular" \
+                    "kalam/Kalam-Bold.ttf:Kalam Bold"; do
+      urlpath="${fontinfo%%:*}"
+      fontname="${fontinfo##*:}"
+      ttf="/tmp/${fontname}.ttf"
+      curl -sL "https://github.com/google/fonts/raw/main/ofl/${urlpath}" -o "${ttf}"
+      mkdir -p "fonts/${fontname}"
+      node -e "
+        const fontnik = require('fontnik');
+        const fs = require('fs');
+        const font = fs.readFileSync('${ttf}');
+        (async () => {
+          for (let s = 0; s < 65536; s += 256) {
+            try {
+              const g = await new Promise((res, rej) => fontnik.range({font, start:s, end:s+255}, (e,d) => e?rej(e):res(d)));
+              fs.writeFileSync('fonts/${fontname}/' + s + '-' + (s+255) + '.pbf', g);
+            } catch(e) {}
+          }
+          console.log('  Generated ${fontname}');
+        })();
+      " 2>/dev/null
+      rm -f "${ttf}"
+    done
+  else
+    echo "  Warning: npx not available, cursive fonts not generated (Ye Olde style will fall back to Noto Sans)"
+  fi
+fi

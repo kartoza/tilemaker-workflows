@@ -161,6 +161,8 @@
             curl
             unzip
             coreutils
+            python3
+            nodejs
           ]) (builtins.readFile ./get_data.sh);
 
           processMalta = mkApp "process-malta" (with pkgs; [

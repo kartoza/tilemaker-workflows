@@ -11,7 +11,7 @@
       "maxzoom": 14
     }
   },
-  "glyphs": "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf",
+  "glyphs": "http://localhost:8001/fonts/{fontstack}/{range}.pbf",
   "layers": [
     {
       "id": "background",
@@ -1378,7 +1378,7 @@
           ]
         ],
         "text-font": [
-          "Kalam Regular"
+          "Kalam Bold"
         ],
         "text-size": [
           "interpolate",
@@ -1444,7 +1444,7 @@
           ]
         ],
         "text-font": [
-          "Kalam Regular"
+          "Kalam Bold"
         ],
         "text-size": [
           "interpolate",
@@ -1747,7 +1747,7 @@
           ]
         ],
         "text-font": [
-          "Dancing Script Bold"
+          "Dancing Script Regular"
         ],
         "text-size": [
           "interpolate",
@@ -1803,7 +1803,7 @@
           ]
         ],
         "text-font": [
-          "Dancing Script Bold"
+          "Dancing Script Regular"
         ],
         "text-size": [
           "interpolate",
@@ -1958,7 +1958,7 @@
           ]
         ],
         "text-font": [
-          "Dancing Script Bold"
+          "Dancing Script Regular"
         ],
         "text-size": [
           "interpolate",
@@ -2011,7 +2011,7 @@
           ]
         ],
         "text-font": [
-          "Dancing Script Bold"
+          "Dancing Script Regular"
         ],
         "text-size": [
           "interpolate",

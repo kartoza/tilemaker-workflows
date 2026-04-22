@@ -11,7 +11,7 @@
       "maxzoom": 14
     }
   },
-  "glyphs": "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
+  "glyphs": "http://localhost:8001/fonts/{fontstack}/{range}.pbf",
   "layers": [
     {
       "id": "background",
