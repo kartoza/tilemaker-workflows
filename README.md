@@ -124,7 +124,7 @@ Open the built-in MapLibre GL viewer with multiple styles:
 http://localhost:8001/viewer.html
 ```
 
-The viewer includes a style switcher with 6 themes: Classic, Neon, Muted, African, Psychedelic, and Sketch.
+The viewer includes a style switcher with 7 themes: Classic, Neon, Muted, African, Psychedelic, Sketch, and Kartoza.
 
 #### QGIS
 
@@ -150,6 +150,7 @@ Available styles (use any as the Style URL):
 | African | `http://localhost:8001/styles/african.json` | Vibrant earth tones |
 | Psychedelic | `http://localhost:8001/styles/psychedelic.json` | Bold saturated colours |
 | Sketch | `http://localhost:8001/styles/sketch.json` | Pencil on aged paper |
+| Kartoza | `http://localhost:8001/styles/kartoza.json` | Kartoza brand teal & orange |
 
 > **Note:** Both `nix run .#serve` (port 8000) and `nix run .#viewer` (port 8001) must be running for QGIS style URLs to work.
 
