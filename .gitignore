@@ -13,6 +13,9 @@ fonts/
 result
 result-*
 
+# Claude
+.claude/
+
 # Direnv
 .direnv/
 
