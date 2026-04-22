@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Planet Tiles Viewer</title>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  #map { position: absolute; top: 0; bottom: 32px; left: 0; right: 0; }
+  #footer {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 32px;
+    background: #1a1a2e; color: #aaa; display: flex; align-items: center;
+    justify-content: center; font-size: 12px; gap: 8px;
+  }
+  #footer a { color: #7ec8e3; text-decoration: none; }
+  #footer a:hover { text-decoration: underline; }
+  #info {
+    position: absolute; top: 10px; left: 10px; background: rgba(26,26,46,0.92);
+    color: #eee; padding: 12px 14px; border-radius: 8px; font-size: 12px;
+    z-index: 10; max-width: 260px; line-height: 1.5;
+    backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,0.08);
+  }
+  #info h3 { margin: 0 0 6px; font-size: 14px; color: #7ec8e3; }
+  #zoom-level { font-weight: bold; color: #ffd700; }
+  #style-switcher {
+    display: flex; gap: 4px; margin-top: 8px;
+  }
+  #style-switcher button {
+    flex: 1; padding: 6px 0; border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 5px; background: rgba(255,255,255,0.06); color: #ccc;
+    font-size: 11px; cursor: pointer; transition: all 0.2s;
+  }
+  #style-switcher button:hover {
+    background: rgba(255,255,255,0.12);
+  }
+  #style-switcher button.active {
+    background: rgba(100,180,255,0.2); border-color: #7ec8e3; color: #fff;
+  }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div id="info">
+  <h3>Planet Tiles Viewer</h3>
+  Zoom: <span id="zoom-level">2</span>
+  <div id="style-switcher">
+    <button class="active" data-style="classic">Classic</button>
+    <button data-style="neon">Neon</button>
+  </div>
+</div>
+<div id="footer">
+  Made with &#x1F497; by <a href="https://kartoza.com">Kartoza</a> |
+  <a href="https://github.com/sponsors/timlinux">Donate!</a> |
+  <a href="https://github.com/timlinux/tilemaker-workflows">GitHub</a>
+</div>
+<script>
+window.onerror = function(msg, url, line, col, err) {
+  document.getElementById("info").innerHTML += '<br><span style="color:#ff4444;font-size:10px">ERROR: ' + msg + ' (line ' + line + ')</span>';
+};
+const TILE_SOURCE = {
+  type: "vector",
+  tiles: ["http://localhost:8000/services/planet/tiles/{z}/{x}/{y}.pbf"],
+  minzoom: 0,
+  maxzoom: 14
+};
+const GLYPHS = "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf";
+const FR = "Noto Sans Regular";
+const FB = "Noto Sans Bold";
+const FI = "Noto Sans Italic";
+
+// ── Theme-driven layer builder ──
+function buildStyle(t) {
+  return {
+    version: 8,
+    name: t.name,
+    sources: { planet: TILE_SOURCE },
+    glyphs: GLYPHS,
+    layers: [
+      { id: "background", type: "background", paint: { "background-color": t.bg } },
+
+      // Landcover
+      { id: "landcover-all", type: "fill", source: "planet", "source-layer": "landcover",
+        paint: { "fill-color": t.landcover, "fill-opacity": 0.5 } },
+      { id: "landcover-wood", type: "fill", source: "planet", "source-layer": "landcover",
+        filter: ["any", ["==","class","wood"], ["==","class","forest"]],
+        paint: { "fill-color": t.forest, "fill-opacity": 0.7 } },
+      { id: "landcover-grass", type: "fill", source: "planet", "source-layer": "landcover",
+        filter: ["==","class","grass"],
+        paint: { "fill-color": t.grass, "fill-opacity": 0.7 } },
+      { id: "landcover-farmland", type: "fill", source: "planet", "source-layer": "landcover",
+        filter: ["==","class","farmland"],
+        paint: { "fill-color": t.farmland, "fill-opacity": 0.7 } },
+      { id: "landcover-wetland", type: "fill", source: "planet", "source-layer": "landcover",
+        filter: ["==","class","wetland"],
+        paint: { "fill-color": t.wetland, "fill-opacity": 0.6 } },
+      { id: "landcover-sand", type: "fill", source: "planet", "source-layer": "landcover",
+        filter: ["==","class","sand"],
+        paint: { "fill-color": t.sand, "fill-opacity": 0.7 } },
+      { id: "landcover-ice", type: "fill", source: "planet", "source-layer": "landcover",
+        filter: ["any", ["==","subclass","ice_shelf"], ["==","subclass","glacier"], ["==","class","ice"]],
+        paint: { "fill-color": t.ice, "fill-opacity": 0.9 } },
+
+      // Landuse
+      { id: "landuse-residential", type: "fill", source: "planet", "source-layer": "landuse",
+        filter: ["==","class","residential"],
+        paint: { "fill-color": t.residential, "fill-opacity": 0.6 } },
+      { id: "landuse-commercial", type: "fill", source: "planet", "source-layer": "landuse",
+        filter: ["any", ["==","class","commercial"], ["==","class","retail"]],
+        paint: { "fill-color": t.commercial, "fill-opacity": 0.5 } },
+      { id: "landuse-industrial", type: "fill", source: "planet", "source-layer": "landuse",
+        filter: ["==","class","industrial"],
+        paint: { "fill-color": t.industrial, "fill-opacity": 0.5 } },
+      { id: "landuse-cemetery", type: "fill", source: "planet", "source-layer": "landuse",
+        filter: ["==","class","cemetery"],
+        paint: { "fill-color": t.cemetery, "fill-opacity": 0.6 } },
+      { id: "landuse-hospital", type: "fill", source: "planet", "source-layer": "landuse",
+        filter: ["==","class","hospital"],
+        paint: { "fill-color": t.hospital, "fill-opacity": 0.6 } },
+      { id: "landuse-school", type: "fill", source: "planet", "source-layer": "landuse",
+        filter: ["any", ["==","class","school"], ["==","class","university"], ["==","class","college"]],
+        paint: { "fill-color": t.school, "fill-opacity": 0.6 } },
+
+      // Park
+      { id: "park", type: "fill", source: "planet", "source-layer": "park",
+        paint: { "fill-color": t.park, "fill-opacity": 0.45 } },
+
+      // Water
+      { id: "water", type: "fill", source: "planet", "source-layer": "water",
+        paint: { "fill-color": t.water } },
+      { id: "waterway", type: "line", source: "planet", "source-layer": "waterway",
+        paint: { "line-color": t.water,
+          "line-width": ["interpolate",["linear"],["zoom"], 8,0.8, 14,3] } },
+
+      // Boundaries
+      { id: "boundary-country", type: "line", source: "planet", "source-layer": "boundary",
+        filter: ["==","admin_level",2],
+        paint: { "line-color": t.borderCountry,
+          "line-width": ["interpolate",["linear"],["zoom"], 0,0.8, 5,1.8, 10,2.5],
+          "line-dasharray": [3,2] } },
+      { id: "boundary-state", type: "line", source: "planet", "source-layer": "boundary",
+        filter: ["==","admin_level",4], minzoom: 4,
+        paint: { "line-color": t.borderState, "line-width": 1, "line-dasharray": [4,3] } },
+
+      // Aeroways
+      { id: "aeroway-runway", type: "line", source: "planet", "source-layer": "aeroway",
+        filter: ["==","class","runway"], minzoom: 11,
+        paint: { "line-color": t.runway,
+          "line-width": ["interpolate",["linear"],["zoom"], 11,3, 14,14] } },
+      { id: "aeroway-taxiway", type: "line", source: "planet", "source-layer": "aeroway",
+        filter: ["==","class","taxiway"], minzoom: 12,
+        paint: { "line-color": t.taxiway,
+          "line-width": ["interpolate",["linear"],["zoom"], 12,1, 14,6] } },
+
+      // ── Road casings (bottom) ──
+      { id: "road-motorway-casing", type: "line", source: "planet", "source-layer": "transportation",
+        filter: ["==","class","motorway"], minzoom: 5,
+        layout: { "line-cap":"round", "line-join":"round" },
+        paint: { "line-color": t.roadCasing.motorway,
+          "line-width": ["interpolate",["exponential",1.5],["zoom"], 5,2, 10,5, 14,16] } },
+      { id: "road-trunk-casing", type: "line", source: "planet", "source-layer": "transportation",
+        filter: ["==","class","trunk"], minzoom: 6,
+        layout: { "line-cap":"round", "line-join":"round" },
+        paint: { "line-color": t.roadCasing.trunk,
+          "line-width": ["interpolate",["exponential",1.5],["zoom"], 6,1.5, 10,4, 14,14] } },
+      { id: "road-primary-casing", type: "line", source: "planet", "source-layer": "transportation",
+        filter: ["==","class","primary"], minzoom: 7,
+        layout: { "line-cap":"round", "line-join":"round" },
+        paint: { "line-color": t.roadCasing.primary,
+          "line-width": ["interpolate",["exponential",1.5],["zoom"], 7,1.2, 10,3, 14,12] } },
+      { id: "road-secondary-casing", type: "line", source: "planet", "source-layer": "transportation",
+        filter: ["==","class","secondary"], minzoom: 9,
+        layout: { "line-cap":"round", "line-join":"round" },
+        paint: { "line-color": t.roadCasing.secondary,
+          "line-width": ["interpolate",["exponential",1.5],["zoom"], 9,1, 10,2, 14,8] } },
+      { id: "road-tertiary-casing", type: "line", source: "planet", "source-layer": "transportation",
+        filter: ["==","class","tertiary"], minzoom: 11,
+        layout: { "line-cap":"round", "line-join":"round" },
+        paint: { "line-color": t.roadCasing.tertiary,
+          "line-width": ["interpolate",["exponential",1.5],["zoom"], 11,0.8, 14,6] } },
+      { id: "road-minor-casing", type: "line", source: "planet", "source-layer": "transportation",
+        filter: ["any", ["==","class","minor"], ["==","class","service"], ["==","class","track"]],
+        minzoom: 12, layout: { "line-cap":"round", "line-join":"round" },
+        paint: { "line-color": t.roadCasing.minor,
+          "line-width": ["interpolate",["exponential",1.5],["zoom"], 12,0.6, 14,4] } },
+
+      // ── Road fills: ground level (no brunnel) ──
+      { id: "road-path", type: "line", source: "planet", "source-layer": "transportation",
+        filter: ["==","class","path"], minzoom: 13,
+        paint: { "line-color": t.roadFill.path, "line-width": 1.2, "line-dasharray": [3,2] } },
+      { id: "road-minor", type: "line", source: "planet", "source-layer": "transportation",
+        filter: ["all", ["any", ["==","class","minor"], ["==","class","service"], ["==","class","track"]], ["!has","brunnel"]],
+        minzoom: 12, layout: { "line-cap":"round", "line-join":"round" },
+        paint: { "line-color": t.roadFill.minor,
+          "line-width": ["interpolate",["exponential",1.5],["zoom"], 12,0.3, 14,2.5] } },
+      { id: "road-tertiary", type: "line", source: "planet", "source-layer": "transportation",
+        filter: ["all", ["==","class","tertiary"], ["!has","brunnel"]], minzoom: 11,
+        layout: { "line-cap":"round", "line-join":"round" },
+        paint: { "line-color": t.roadFill.tertiary,
+          "line-width": ["interpolate",["exponential",1.5],["zoom"], 11,0.5, 14,4.5] } },
+      { id: "road-secondary", type: "line", source: "planet", "source-layer": "transportation",
+        filter: ["all", ["==","class","secondary"], ["!has","brunnel"]], minzoom: 9,
+        layout: { "line-cap":"round", "line-join":"round" },
+        paint: { "line-color": t.roadFill.secondary,
+          "line-width": ["interpolate",["exponential",1.5],["zoom"], 9,0.6, 10,2, 14,6] } },
+      { id: "road-primary", type: "line", source: "planet", "source-layer": "transportation",
+        filter: ["all", ["==","class","primary"], ["!has","brunnel"]], minzoom: 7,
+        layout: { "line-cap":"round", "line-join":"round" },
+        paint: { "line-color": t.roadFill.primary,
+          "line-width": ["interpolate",["exponential",1.5],["zoom"], 7,0.6, 10,2, 14,9] } },
+      { id: "road-trunk", type: "line", source: "planet", "source-layer": "transportation",
+        filter: ["all", ["==","class","trunk"], ["!has","brunnel"]], minzoom: 6,
+        layout: { "line-cap":"round", "line-join":"round" },
+        paint: { "line-color": t.roadFill.trunk,
+          "line-width": ["interpolate",["exponential",1.5],["zoom"], 6,0.8, 10,2.5, 14,11] } },
+      { id: "road-motorway", type: "line", source: "planet", "source-layer": "transportation",
+        filter: ["all", ["==","class","motorway"], ["!has","brunnel"]], minzoom: 5,
+        layout: { "line-cap":"round", "line-join":"round" },
+        paint: { "line-color": t.roadFill.motorway,
+          "line-width": ["interpolate",["exponential",1.5],["zoom"], 5,1.2, 10,3.5, 14,13] } },
+
+      // ── Bridge casings ──
+      { id: "bridge-motorway-casing", type: "line", source: "planet", "source-layer": "transportation",
+        filter: ["all", ["==","class","motorway"], ["==","brunnel","bridge"]], minzoom: 5,
+        layout: { "line-cap":"butt", "line-join":"round" },
+        paint: { "line-color": t.roadCasing.motorway,
+          "line-width": ["interpolate",["exponential",1.5],["zoom"], 5,2, 10,5, 14,16] } },
+      { id: "bridge-trunk-casing", type: "line", source: "planet", "source-layer": "transportation",
+        filter: ["all", ["==","class","trunk"], ["==","brunnel","bridge"]], minzoom: 6,
+        layout: { "line-cap":"butt", "line-join":"round" },
+        paint: { "line-color": t.roadCasing.trunk,
+          "line-width": ["interpolate",["exponential",1.5],["zoom"], 6,1.5, 10,4, 14,14] } },
+      { id: "bridge-primary-casing", type: "line", source: "planet", "source-layer": "transportation",
+        filter: ["all", ["==","class","primary"], ["==","brunnel","bridge"]], minzoom: 7,
+        layout: { "line-cap":"butt", "line-join":"round" },
+        paint: { "line-color": t.roadCasing.primary,
+          "line-width": ["interpolate",["exponential",1.5],["zoom"], 7,1.2, 10,3, 14,12] } },
+      { id: "bridge-secondary-casing", type: "line", source: "planet", "source-layer": "transportation",
+        filter: ["all", ["==","class","secondary"], ["==","brunnel","bridge"]], minzoom: 9,
+        layout: { "line-cap":"butt", "line-join":"round" },
+        paint: { "line-color": t.roadCasing.secondary,
+          "line-width": ["interpolate",["exponential",1.5],["zoom"], 9,1, 10,2, 14,8] } },
+
+      // ── Bridge fills (on top of everything ground-level) ──
+      { id: "bridge-secondary", type: "line", source: "planet", "source-layer": "transportation",
+        filter: ["all", ["==","class","secondary"], ["==","brunnel","bridge"]], minzoom: 9,
+        layout: { "line-cap":"butt", "line-join":"round" },
+        paint: { "line-color": t.roadFill.secondary,
+          "line-width": ["interpolate",["exponential",1.5],["zoom"], 9,0.6, 10,2, 14,6] } },
+      { id: "bridge-primary", type: "line", source: "planet", "source-layer": "transportation",
+        filter: ["all", ["==","class","primary"], ["==","brunnel","bridge"]], minzoom: 7,
+        layout: { "line-cap":"butt", "line-join":"round" },
+        paint: { "line-color": t.roadFill.primary,
+          "line-width": ["interpolate",["exponential",1.5],["zoom"], 7,0.6, 10,2, 14,9] } },
+      { id: "bridge-trunk", type: "line", source: "planet", "source-layer": "transportation",
+        filter: ["all", ["==","class","trunk"], ["==","brunnel","bridge"]], minzoom: 6,
+        layout: { "line-cap":"butt", "line-join":"round" },
+        paint: { "line-color": t.roadFill.trunk,
+          "line-width": ["interpolate",["exponential",1.5],["zoom"], 6,0.8, 10,2.5, 14,11] } },
+      { id: "bridge-motorway", type: "line", source: "planet", "source-layer": "transportation",
+        filter: ["all", ["==","class","motorway"], ["==","brunnel","bridge"]], minzoom: 5,
+        layout: { "line-cap":"butt", "line-join":"round" },
+        paint: { "line-color": t.roadFill.motorway,
+          "line-width": ["interpolate",["exponential",1.5],["zoom"], 5,1.2, 10,3.5, 14,13] } },
+
+      // Rail
+      { id: "rail", type: "line", source: "planet", "source-layer": "transportation",
+        filter: ["==","class","rail"], minzoom: 8,
+        paint: { "line-color": t.rail,
+          "line-width": ["interpolate",["linear"],["zoom"], 8,0.8, 14,2.5] } },
+      { id: "rail-dash", type: "line", source: "planet", "source-layer": "transportation",
+        filter: ["==","class","rail"], minzoom: 8,
+        paint: { "line-color": t.railDash,
+          "line-width": ["interpolate",["linear"],["zoom"], 8,0.4, 14,1.5],
+          "line-dasharray": [3,3] } },
+
+      // Buildings
+      { id: "building", type: "fill", source: "planet", "source-layer": "building", minzoom: 13,
+        paint: { "fill-color": t.building,
+          "fill-opacity": ["interpolate",["linear"],["zoom"], 13,0.4, 15,0.7] } },
+      { id: "building-outline", type: "line", source: "planet", "source-layer": "building", minzoom: 14,
+        paint: { "line-color": t.buildingOutline, "line-width": 0.6 } },
+
+      // ── Labels ──
+      { id: "road-label-primary", type: "symbol", source: "planet", "source-layer": "transportation_name",
+        filter: ["any", ["==","class","motorway"], ["==","class","trunk"], ["==","class","primary"]],
+        minzoom: 10,
+        layout: { "symbol-placement":"line",
+          "text-field": ["coalesce",["get","name:latin"],["get","name"]],
+          "text-font": [FR], "text-size": ["interpolate",["linear"],["zoom"], 10,9, 14,13],
+          "text-max-angle": 30, "text-padding": 5 },
+        paint: { "text-color": t.labelRoad, "text-halo-color": t.labelHalo, "text-halo-width": 2 } },
+      { id: "road-label-secondary", type: "symbol", source: "planet", "source-layer": "transportation_name",
+        filter: ["any", ["==","class","secondary"], ["==","class","tertiary"]],
+        minzoom: 13,
+        layout: { "symbol-placement":"line",
+          "text-field": ["coalesce",["get","name:latin"],["get","name"]],
+          "text-font": [FR], "text-size": 10, "text-max-angle": 30, "text-padding": 5 },
+        paint: { "text-color": t.labelRoadMinor, "text-halo-color": t.labelHalo, "text-halo-width": 1.5 } },
+      { id: "water-name", type: "symbol", source: "planet", "source-layer": "water_name", minzoom: 14,
+        layout: { "text-field": ["coalesce",["get","name:latin"],["get","name"]],
+          "text-font": [FI], "text-size": 11 },
+        paint: { "text-color": t.labelWater, "text-halo-color": t.labelHalo, "text-halo-width": 1.5 } },
+      { id: "aerodrome-label", type: "symbol", source: "planet", "source-layer": "aerodrome_label", minzoom: 10,
+        layout: { "text-field": ["coalesce",["get","name:latin"],["get","name"]],
+          "text-font": [FR], "text-size": 10, "text-offset": [0,1] },
+        paint: { "text-color": t.labelAero, "text-halo-color": t.labelHalo, "text-halo-width": 1.5 } },
+      { id: "mountain-peak", type: "symbol", source: "planet", "source-layer": "mountain_peak", minzoom: 11,
+        layout: { "text-field": ["concat", ["coalesce",["get","name:latin"],["get","name"]], "\n",
+            ["case",["has","ele"], ["concat",["get","ele"],"m"], ""]],
+          "text-font": [FR], "text-size": 10, "text-offset": [0,0.8] },
+        paint: { "text-color": t.labelPeak, "text-halo-color": t.labelHalo, "text-halo-width": 1.5 } },
+      { id: "poi", type: "symbol", source: "planet", "source-layer": "poi", minzoom: 14,
+        filter: ["<=","rank",5],
+        layout: { "text-field": ["coalesce",["get","name:latin"],["get","name"]],
+          "text-font": [FR], "text-size": 10, "text-offset": [0,0.6], "text-anchor":"top", "text-optional": true },
+        paint: { "text-color": t.labelPoi, "text-halo-color": t.labelHalo, "text-halo-width": 1.5 } },
+      { id: "housenumber", type: "symbol", source: "planet", "source-layer": "housenumber", minzoom: 14,
+        layout: { "text-field": "{housenumber}", "text-font": [FR], "text-size": 9 },
+        paint: { "text-color": t.labelHouseNr, "text-halo-color": t.labelHalo, "text-halo-width": 1 } },
+
+      // Place labels
+      { id: "place-country", type: "symbol", source: "planet", "source-layer": "place",
+        filter: ["==","class","country"], minzoom: 1, maxzoom: 7,
+        layout: { "text-field": ["coalesce",["get","name:latin"],["get","name"]],
+          "text-font": [FB], "text-size": ["interpolate",["linear"],["zoom"], 1,10, 4,16, 6,22],
+          "text-transform":"uppercase", "text-letter-spacing": 0.1, "text-max-width": 8 },
+        paint: { "text-color": t.labelCountry, "text-halo-color": t.labelHalo, "text-halo-width": 2.5 } },
+      { id: "place-state", type: "symbol", source: "planet", "source-layer": "place",
+        filter: ["==","class","state"], minzoom: 4, maxzoom: 9,
+        layout: { "text-field": ["coalesce",["get","name:latin"],["get","name"]],
+          "text-font": [FR], "text-size": ["interpolate",["linear"],["zoom"], 4,9, 8,14],
+          "text-transform":"uppercase", "text-letter-spacing": 0.05, "text-max-width": 8 },
+        paint: { "text-color": t.labelState, "text-halo-color": t.labelHalo, "text-halo-width": 2 } },
+      { id: "place-city", type: "symbol", source: "planet", "source-layer": "place",
+        filter: ["==","class","city"], minzoom: 4,
+        layout: { "text-field": ["coalesce",["get","name:latin"],["get","name"]],
+          "text-font": [FB], "text-size": ["interpolate",["linear"],["zoom"], 4,11, 8,17, 12,22],
+          "text-max-width": 8 },
+        paint: { "text-color": t.labelCity, "text-halo-color": t.labelHalo, "text-halo-width": 2.5 } },
+      { id: "place-town", type: "symbol", source: "planet", "source-layer": "place",
+        filter: ["==","class","town"], minzoom: 7,
+        layout: { "text-field": ["coalesce",["get","name:latin"],["get","name"]],
+          "text-font": [FR], "text-size": ["interpolate",["linear"],["zoom"], 7,10, 12,16],
+          "text-max-width": 8 },
+        paint: { "text-color": t.labelTown, "text-halo-color": t.labelHalo, "text-halo-width": 2 } },
+      { id: "place-village", type: "symbol", source: "planet", "source-layer": "place",
+        filter: ["==","class","village"], minzoom: 10,
+        layout: { "text-field": ["coalesce",["get","name:latin"],["get","name"]],
+          "text-font": [FR], "text-size": ["interpolate",["linear"],["zoom"], 10,10, 14,14],
+          "text-max-width": 8 },
+        paint: { "text-color": t.labelVillage, "text-halo-color": t.labelHalo, "text-halo-width": 2 } },
+      { id: "place-hamlet", type: "symbol", source: "planet", "source-layer": "place",
+        filter: ["any", ["==","class","hamlet"], ["==","class","suburb"], ["==","class","neighbourhood"]],
+        minzoom: 12,
+        layout: { "text-field": ["coalesce",["get","name:latin"],["get","name"]],
+          "text-font": [FR], "text-size": 11, "text-max-width": 8 },
+        paint: { "text-color": t.labelHamlet, "text-halo-color": t.labelHalo, "text-halo-width": 1.5 } },
+    ]
+  };
+}
+
+// ═══════════════════════════════════════
+// CLASSIC THEME
+// ═══════════════════════════════════════
+const classic = {
+  name: "Classic",
+  bg: "#e8e0d8",
+  landcover: "#d8e4c8", forest: "#8bc490", grass: "#c8e0a8",
+  farmland: "#e8e4c0", wetland: "#b0d8c0", sand: "#f0e8c8", ice: "#dceaf8",
+  residential: "#ddd4cc", commercial: "#ecc8b8", industrial: "#d0c8d8",
+  cemetery: "#b8ccb0", hospital: "#f0c8c8", school: "#e8dca8",
+  park: "#a0d090",
+  water: "#80b8e0",
+  borderCountry: "#8a6090", borderState: "#a888a8",
+  runway: "#b0a898", taxiway: "#c0b8a8",
+  roadCasing: { motorway:"#c06030", trunk:"#c88030", primary:"#b89840", secondary:"#a0a0a0", tertiary:"#b0b0b0", minor:"#c0c0c0" },
+  roadFill:   { motorway:"#e89050", trunk:"#f0b060", primary:"#f0c868", secondary:"#f8f8f0", tertiary:"#ffffff", minor:"#ffffff", path:"#b09070" },
+  rail: "#888888", railDash: "#e0e0e0",
+  building: "#c8c0b8", buildingOutline: "#a8a098",
+  labelRoad: "#504030", labelRoadMinor: "#505050", labelWater: "#3870a0",
+  labelAero: "#505090", labelPeak: "#6a4820", labelPoi: "#505050", labelHouseNr: "#909090",
+  labelCountry: "#4a3a4a", labelState: "#605060", labelCity: "#282828",
+  labelTown: "#383838", labelVillage: "#484848", labelHamlet: "#585858",
+  labelHalo: "rgba(255,255,255,0.9)",
+};
+
+// ═══════════════════════════════════════
+// NEON THEME — dark cyberpunk
+// ═══════════════════════════════════════
+const neon = {
+  name: "Neon",
+  bg: "#0a0a18",
+  landcover: "#0d1a12", forest: "#0a2818", grass: "#0c2210",
+  farmland: "#121a08", wetland: "#081a18", sand: "#1a1808", ice: "#101828",
+  residential: "#12101a", commercial: "#1a0c14", industrial: "#14101a",
+  cemetery: "#0c140c", hospital: "#1a0810", school: "#1a1408",
+  park: "#0a2010",
+  water: "#0a1830",
+  borderCountry: "#ff00ff", borderState: "#8800aa",
+  runway: "#303050", taxiway: "#282848",
+  roadCasing: { motorway:"#ff2060", trunk:"#ff4020", primary:"#cc8800", secondary:"#0088ff", tertiary:"#0066cc", minor:"#333355" },
+  roadFill:   { motorway:"#ff4080", trunk:"#ff6040", primary:"#ffaa00", secondary:"#00aaff", tertiary:"#0088dd", minor:"#444466", path:"#605080" },
+  rail: "#8844cc", railDash: "#1a1030",
+  building: "#181430", buildingOutline: "#4020a0",
+  labelRoad: "#ffcc40", labelRoadMinor: "#80a0cc", labelWater: "#4488ff",
+  labelAero: "#cc44ff", labelPeak: "#ff8844", labelPoi: "#88ccff", labelHouseNr: "#445566",
+  labelCountry: "#ff40ff", labelState: "#cc66ff", labelCity: "#00ffcc",
+  labelTown: "#00ddaa", labelVillage: "#00bb99", labelHamlet: "#009988",
+  labelHalo: "rgba(10,10,24,0.9)",
+};
+
+// ═══════════════════════════════════════
+// Map init
+// ═══════════════════════════════════════
+const themes = { classic, neon };
+let currentTheme = "classic";
+
+const map = new maplibregl.Map({
+  container: "map",
+  style: buildStyle(themes[currentTheme]),
+  center: [0, 20],
+  zoom: 2,
+  hash: true
+});
+
+map.addControl(new maplibregl.NavigationControl(), "top-right");
+map.addControl(new maplibregl.ScaleControl(), "bottom-left");
+
+const zoomEl = document.getElementById("zoom-level");
+map.on("move", () => { zoomEl.textContent = map.getZoom().toFixed(1); });
+
+// Style switcher
+document.querySelectorAll("#style-switcher button").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const name = btn.dataset.style;
+    if (name === currentTheme) return;
+    currentTheme = name;
+    const center = map.getCenter();
+    const zoom = map.getZoom();
+    const bearing = map.getBearing();
+    const pitch = map.getPitch();
+    map.setStyle(buildStyle(themes[name]));
+    map.once("style.load", () => {
+      map.jumpTo({ center, zoom, bearing, pitch });
+    });
+    document.querySelectorAll("#style-switcher button").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+  });
+});
+</script>
+</body>
+</html>

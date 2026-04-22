@@ -295,13 +295,13 @@ function relation_scan_function()
 	end
 end
 
-function write_to_transportation_layer(minzoom, highway_class)
+function write_to_transportation_layer(minzoom, highway_class, is_ramp)
 	Layer("transportation", false)
 	MinZoom(minzoom)
 	SetZOrder()
 	Attribute("class", highway_class)
 	SetBrunnelAttributes()
-	if ramp then AttributeNumeric("ramp",1) end
+	if is_ramp then AttributeNumeric("ramp",1) end
 
 	-- Service
 	if highway == "service" and service ~="" then Attribute("service", service) end
@@ -449,7 +449,7 @@ function way_function()
 
 		-- Write to layer
 		if minzoom <= 14 then
-			write_to_transportation_layer(minzoom, h)
+			write_to_transportation_layer(minzoom, h, ramp)
 
 			-- Write names
 			if minzoom < 8 then
@@ -528,16 +528,16 @@ function way_function()
 
 	-- 'aerodrome_label'
 	if aeroway=="aerodrome" then
-	 	LayerAsCentroid("aerodrome_label")
-	 	SetNameAttributes()
-	 	Attribute("iata", Find("iata"))
-  		SetEleAttributes()
- 	 	Attribute("icao", Find("icao"))
+		LayerAsCentroid("aerodrome_label")
+		SetNameAttributes()
+		Attribute("iata", Find("iata"))
+		SetEleAttributes()
+		Attribute("icao", Find("icao"))
 
- 	 	local aerodrome = Find(aeroway)
- 	 	local class
- 	 	if aerodromeValues[aerodrome] then class = aerodrome else class = "other" end
- 	 	Attribute("class", class)
+		local aerodrome = Find(aeroway)
+		local class
+		if aerodromeValues[aerodrome] then class = aerodrome else class = "other" end
+		Attribute("class", class)
 	end
 
 	-- Set 'waterway' and associated

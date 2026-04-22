@@ -9,4 +9,8 @@ if [ ! -d "$SERVE_DIR" ] || [ -z "$(find "$SERVE_DIR" -name '*.mbtiles' -print -
 fi
 
 echo "Serving tiles from ${SERVE_DIR}/..."
+echo ""
+echo "  TileJSON:  http://localhost:8000/services/"
+echo "  Viewer:    Open viewer.html in a browser (or nix run .#viewer)"
+echo ""
 mbtileserver --basemap-style-url "https://raw.githubusercontent.com/openmaptiles/osm-bright-gl-style/master/style.json" -d "$SERVE_DIR"

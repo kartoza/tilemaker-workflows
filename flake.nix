@@ -163,6 +163,12 @@
 
           serve = mkApp "serve" [ pkgs.mbtileserver ] (builtins.readFile ./run_server.sh);
 
+          viewer = mkApp "viewer" [ pkgs.python3 ] ''
+            echo "Opening viewer at http://localhost:8001/viewer.html"
+            echo "Make sure mbtileserver is running (nix run .#serve)"
+            python3 -m http.server 8001
+          '';
+
           maputnik = mkApp "maputnik" (with pkgs; [
             git
             nodejs
@@ -181,7 +187,7 @@
                 source ./common.sh
                 ensure_geodata
                 echo "Generating coastline tiles..."
-                time tilemaker --output "${OUTPUT_DIR}/coastline.mbtiles" \
+                time tilemaker --output "''${OUTPUT_DIR}/coastline.mbtiles" \
                   --bbox -180,-85,180,85 \
                   --process process-coastline.lua \
                   --config config-coastline.json

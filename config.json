@@ -44,12 +44,11 @@
 		"description": "Tile config based on OpenMapTiles schema",
 		"compress": "gzip",
 		"filemetadata": {
-			"tilejson": "2.0.0", 
-			"scheme": "xyz", 
-			"type": "baselayer", 
-			"format": "pbf", 
-            "tiles": ["https://example.com/liechtenstein/{z}/{x}/{y}.pbf"]
+			"tilejson": "2.0.0",
+			"scheme": "xyz",
+			"type": "baselayer",
+			"format": "pbf",
+            "tiles": ["http://localhost:8000/services/planet/tiles/{z}/{x}/{y}.pbf"]
 		}
 	}
 }
-
