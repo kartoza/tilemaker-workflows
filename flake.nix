@@ -170,6 +170,11 @@
             curl
           ]) (builtins.readFile ./process_malta.sh);
 
+          processSouthAfrica = mkApp "process-south-africa" (with pkgs; [
+            tilemaker
+            curl
+          ]) (builtins.readFile ./process_south_africa.sh);
+
           processPlanet = mkApp "process-planet" (with pkgs; [
             tilemaker
             osmium-tool

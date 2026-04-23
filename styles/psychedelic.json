@@ -777,6 +777,135 @@
       }
     },
     {
+      "id": "road-motorway-ramp",
+      "type": "line",
+      "source": "planet",
+      "source-layer": "transportation",
+      "filter": [
+        "all",
+        [
+          "==",
+          "class",
+          "motorway"
+        ],
+        [
+          "==",
+          "ramp",
+          1
+        ]
+      ],
+      "minzoom": 5,
+      "layout": {
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      "paint": {
+        "line-color": "#ff44cc",
+        "line-width": [
+          "interpolate",
+          [
+            "exponential",
+            1.5
+          ],
+          [
+            "zoom"
+          ],
+          5,
+          0.7,
+          10,
+          2.1,
+          14,
+          7.8
+        ]
+      }
+    },
+    {
+      "id": "road-trunk-ramp",
+      "type": "line",
+      "source": "planet",
+      "source-layer": "transportation",
+      "filter": [
+        "all",
+        [
+          "==",
+          "class",
+          "trunk"
+        ],
+        [
+          "==",
+          "ramp",
+          1
+        ]
+      ],
+      "minzoom": 6,
+      "layout": {
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      "paint": {
+        "line-color": "#ff8800",
+        "line-width": [
+          "interpolate",
+          [
+            "exponential",
+            1.5
+          ],
+          [
+            "zoom"
+          ],
+          6,
+          0.5,
+          10,
+          1.5,
+          14,
+          6.6
+        ]
+      }
+    },
+    {
+      "id": "road-primary-ramp",
+      "type": "line",
+      "source": "planet",
+      "source-layer": "transportation",
+      "filter": [
+        "all",
+        [
+          "==",
+          "class",
+          "primary"
+        ],
+        [
+          "==",
+          "ramp",
+          1
+        ]
+      ],
+      "minzoom": 7,
+      "layout": {
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      "paint": {
+        "line-color": "#ee44ff",
+        "line-width": [
+          "interpolate",
+          [
+            "exponential",
+            1.5
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0.4,
+          10,
+          1.2,
+          14,
+          5.4
+        ]
+      }
+    },
+    {
       "id": "road-primary",
       "type": "line",
       "source": "planet",
@@ -791,6 +920,10 @@
         [
           "!has",
           "brunnel"
+        ],
+        [
+          "!has",
+          "ramp"
         ]
       ],
       "minzoom": 7,
@@ -833,6 +966,10 @@
         [
           "!has",
           "brunnel"
+        ],
+        [
+          "!has",
+          "ramp"
         ]
       ],
       "minzoom": 6,
@@ -875,6 +1012,10 @@
         [
           "!has",
           "brunnel"
+        ],
+        [
+          "!has",
+          "ramp"
         ]
       ],
       "minzoom": 5,
@@ -1118,6 +1259,135 @@
       }
     },
     {
+      "id": "bridge-motorway-ramp",
+      "type": "line",
+      "source": "planet",
+      "source-layer": "transportation",
+      "filter": [
+        "all",
+        [
+          "==",
+          "class",
+          "motorway"
+        ],
+        [
+          "==",
+          "ramp",
+          1
+        ]
+      ],
+      "minzoom": 5,
+      "layout": {
+        "line-cap": "butt",
+        "line-join": "round"
+      },
+      "paint": {
+        "line-color": "#ff44cc",
+        "line-width": [
+          "interpolate",
+          [
+            "exponential",
+            1.5
+          ],
+          [
+            "zoom"
+          ],
+          5,
+          0.7,
+          10,
+          2.1,
+          14,
+          7.8
+        ]
+      }
+    },
+    {
+      "id": "bridge-trunk-ramp",
+      "type": "line",
+      "source": "planet",
+      "source-layer": "transportation",
+      "filter": [
+        "all",
+        [
+          "==",
+          "class",
+          "trunk"
+        ],
+        [
+          "==",
+          "ramp",
+          1
+        ]
+      ],
+      "minzoom": 6,
+      "layout": {
+        "line-cap": "butt",
+        "line-join": "round"
+      },
+      "paint": {
+        "line-color": "#ff8800",
+        "line-width": [
+          "interpolate",
+          [
+            "exponential",
+            1.5
+          ],
+          [
+            "zoom"
+          ],
+          6,
+          0.5,
+          10,
+          1.5,
+          14,
+          6.6
+        ]
+      }
+    },
+    {
+      "id": "bridge-primary-ramp",
+      "type": "line",
+      "source": "planet",
+      "source-layer": "transportation",
+      "filter": [
+        "all",
+        [
+          "==",
+          "class",
+          "primary"
+        ],
+        [
+          "==",
+          "ramp",
+          1
+        ]
+      ],
+      "minzoom": 7,
+      "layout": {
+        "line-cap": "butt",
+        "line-join": "round"
+      },
+      "paint": {
+        "line-color": "#ee44ff",
+        "line-width": [
+          "interpolate",
+          [
+            "exponential",
+            1.5
+          ],
+          [
+            "zoom"
+          ],
+          7,
+          0.4,
+          10,
+          1.2,
+          14,
+          5.4
+        ]
+      }
+    },
+    {
       "id": "bridge-primary",
       "type": "line",
       "source": "planet",
@@ -1133,6 +1403,10 @@
           "==",
           "brunnel",
           "bridge"
+        ],
+        [
+          "!has",
+          "ramp"
         ]
       ],
       "minzoom": 7,
@@ -1176,6 +1450,10 @@
           "==",
           "brunnel",
           "bridge"
+        ],
+        [
+          "!has",
+          "ramp"
         ]
       ],
       "minzoom": 6,
@@ -1219,6 +1497,10 @@
           "==",
           "brunnel",
           "bridge"
+        ],
+        [
+          "!has",
+          "ramp"
         ]
       ],
       "minzoom": 5,
