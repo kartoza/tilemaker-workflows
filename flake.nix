@@ -125,6 +125,7 @@
             echo "  ║    nix run .#processPlanet   Generate planet vector tiles              ║"
             echo "  ║    nix run .#coastline       Generate coastline tiles                  ║"
             echo "  ║    nix run .#serve           Start mbtileserver on :8000               ║"
+            echo "  ║    nix run .#stopServe       Stop all running tile servers              ║"
             echo "  ║    nix run .#viewer          Serve web viewer on :8001                 ║"
             echo "  ║    nix run .#maputnik        Launch Maputnik style editor              ║"
             echo "  ║                                                                      ║"
@@ -183,6 +184,8 @@
           ]) (builtins.readFile ./process_planet.sh);
 
           serve = mkApp "serve" [ pkgs.mbtileserver ] (builtins.readFile ./run_server.sh);
+
+          stopServe = mkApp "stop-serve" [ pkgs.procps ] (builtins.readFile ./stop_server.sh);
 
           viewer = mkApp "viewer" [ pkgs.python3 ] ''
             echo "Opening viewer at http://localhost:8001/viewer.html"
@@ -247,6 +250,7 @@
             echo "    nix run .#processPlanet   Generate planet vector tiles"
             echo "    nix run .#coastline       Generate coastline tiles"
             echo "    nix run .#serve           Start mbtileserver on :8000"
+            echo "    nix run .#stopServe       Stop all running tile servers"
             echo "    nix run .#viewer          Serve web viewer & styles on :8001"
             echo "    nix run .#maputnik        Launch Maputnik style editor"
             echo "    nix run .#lint            Run linters"
