@@ -14,6 +14,7 @@ VIEWER_PORT=8081
 echo "Serving tiles from ${SERVE_DIR}/..."
 echo ""
 echo "  TileJSON:  http://localhost:8000/services/"
+echo "  Fonts:     http://localhost:8001/fonts/"
 echo "  Viewer:    http://localhost:${VIEWER_PORT}/viewer.html"
 echo ""
 
@@ -21,8 +22,13 @@ echo ""
 python3 -m http.server "$VIEWER_PORT" --directory "$SCRIPT_DIR" &
 VIEWER_PID=$!
 
-# Ensure the viewer server is stopped when this script exits
-trap 'kill $VIEWER_PID 2>/dev/null' EXIT
+# Start a font server on port 8001
+FONT_PORT=8001
+python3 -m http.server "$FONT_PORT" --directory "$SCRIPT_DIR" &
+FONT_PID=$!
+
+# Ensure both servers are stopped when this script exits
+trap 'kill $VIEWER_PID $FONT_PID 2>/dev/null' EXIT
 
 # Open the viewer in the default browser
 if command -v xdg-open &>/dev/null; then
