@@ -61,6 +61,13 @@
     <button data-style="scifi">Sci-Fi</button>
     <button data-style="biologic">Biologic</button>
     <button data-style="sketch2">Sketch 2</button>
+    <button data-style="noir">Noir</button>
+    <button data-style="pointillist">Pointillist</button>
+    <button data-style="places">Places</button>
+    <button data-style="infrared">Infrared</button>
+    <button data-style="matrix">Matrix</button>
+    <button data-style="hazard">Hazard</button>
+    <button data-style="beach-ball">Beach Ball</button>
   </div>
 </div>
 <div id="footer">
@@ -102,6 +109,15 @@ async function init() {
 
   map.addControl(new maplibregl.NavigationControl(), "top-right");
   map.addControl(new maplibregl.ScaleControl(), "bottom-left");
+  map.addControl(new maplibregl.AttributionControl({
+    compact: true,
+    customAttribution: [
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      '<a href="https://openmaptiles.org/">OpenMapTiles</a>',
+      'Icons: <a href="https://github.com/mapbox/maki">Maki</a> &amp; <a href="https://github.com/rapideditor/temaki">Temaki</a> (CC0)',
+      '<a href="https://www.naturalearthdata.com/">Natural Earth</a>'
+    ]
+  }), "bottom-right");
 
   const zoomEl = document.getElementById("zoom-level");
   map.on("move", () => { zoomEl.textContent = map.getZoom().toFixed(1); });

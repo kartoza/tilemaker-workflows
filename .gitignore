@@ -8,6 +8,7 @@ work/
 downloads/
 coastline/
 fonts/
+sprites/svg_cache/
 
 # Nix
 result
