@@ -1,0 +1,11 @@
+services:
+  tilemaker-server:
+    image: tilemaker-server:latest
+    container_name: tilemaker-server
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./output:/data:ro
+    environment:
+      - DATA_DIR=/data
