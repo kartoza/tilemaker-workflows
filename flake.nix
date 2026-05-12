@@ -205,6 +205,8 @@
             echo "  ║    nix fmt                   Format nix files                         ║"
             echo "  ║    pre-commit run -a         Run all pre-commit hooks                  ║"
             echo "  ║    Neovim: <leader>p         Project command menu                     ║"
+            echo "  ║  Help:                                                               ║"
+            echo "  ║    make help                   Show all available commands            ║"
             echo "  ║                                                                      ║"
             echo "  ║  Made with 💗 by Kartoza — https://kartoza.com                       ║"
             echo "  ╚══════════════════════════════════════════════════════════════════════╝"
