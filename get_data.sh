@@ -73,6 +73,14 @@ else
 
   # Generate display/cursive fonts from Google Fonts TTFs using fontnik
   if command -v npx &>/dev/null; then
+    # Ensure fontnik is installed
+    if ! node -e "require('fontnik')" 2>/dev/null; then
+      echo "  Installing fontnik..."
+      npm install --no-save fontnik 2>/dev/null || true
+    fi
+    if ! node -e "require('fontnik')" 2>/dev/null; then
+      echo "  Warning: fontnik not available, decorative fonts will not be generated"
+    else
     # Format: "github_path:Font Name" — paths relative to google/fonts/raw/main/
     for fontinfo in "ofl/dancingscript/DancingScript%5Bwght%5D.ttf:Dancing Script Regular" \
                     "ofl/kalam/Kalam-Regular.ttf:Kalam Regular" \
@@ -97,7 +105,7 @@ else
       urlpath="${fontinfo%%:*}"
       fontname="${fontinfo##*:}"
       ttf="/tmp/${fontname}.ttf"
-      curl -sfL "https://github.com/google/fonts/raw/main/${urlpath}" -o "${ttf}"
+      curl -sfL "https://github.com/google/fonts/raw/main/${urlpath}" -o "${ttf}" || { echo "  Warning: failed to download ${fontname}"; continue; }
       mkdir -p "fonts/${fontname}"
       node -e "
         const fontnik = require('fontnik');
@@ -112,10 +120,11 @@ else
           }
           console.log('  Generated ${fontname}');
         })();
-      " 2>/dev/null
+      " 2>/dev/null || echo "  Warning: failed to generate ${fontname}"
       rm -f "${ttf}"
     done
+    fi
   else
-    echo "  Warning: npx not available, cursive fonts not generated (Ye Olde style will fall back to Noto Sans)"
+    echo "  Warning: npx not available, decorative fonts not generated"
   fi
 fi

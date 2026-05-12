@@ -58,6 +58,9 @@
     <button data-style="grayscale">Grayscale</button>
     <button data-style="panopoly">Panopoly</button>
     <button data-style="ye-olde">Ye Olde</button>
+    <button data-style="scifi">Sci-Fi</button>
+    <button data-style="biologic">Biologic</button>
+    <button data-style="sketch2">Sketch 2</button>
   </div>
 </div>
 <div id="footer">
@@ -71,19 +74,24 @@ window.onerror = function(msg, url, line, col, err) {
 };
 
 let currentStyle = "classic";
+const origin = window.location.origin;
 const styleCache = {};
+
+function resolveUrls(obj) {
+  const str = JSON.stringify(obj);
+  return JSON.parse(str.replace(/"(\/(?:services|fonts|styles)\/[^"]*?)"/g, '"' + origin + '$1"'));
+}
 
 async function loadStyle(name) {
   if (styleCache[name]) return styleCache[name];
-  const resp = await fetch("styles/" + name + ".json");
-  const style = await resp.json();
+  const resp = await fetch(origin + "/styles/" + name + ".json");
+  const style = resolveUrls(await resp.json());
   styleCache[name] = style;
   return style;
 }
 
 async function init() {
   const style = await loadStyle("classic");
-
   const map = new maplibregl.Map({
     container: "map",
     style: style,

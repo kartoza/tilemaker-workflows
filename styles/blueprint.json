@@ -5,13 +5,13 @@
     "planet": {
       "type": "vector",
       "tiles": [
-        "http://localhost:8000/services/planet/tiles/{z}/{x}/{y}.pbf"
+        "/services/planet/tiles/{z}/{x}/{y}.pbf"
       ],
       "minzoom": 0,
       "maxzoom": 14
     }
   },
-  "glyphs": "http://localhost:8001/fonts/{fontstack}/{range}.pbf",
+  "glyphs": "/fonts/{fontstack}/{range}.pbf",
   "layers": [
     {
       "id": "background",

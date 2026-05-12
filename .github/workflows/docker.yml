@@ -1,0 +1,142 @@
+name: Build Docker image
+
+on:
+  pull_request:
+  release:
+    types: [published]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v30
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Build Nix base image
+        run: |
+          nix build .#dockerImage -o result
+
+      - name: Download fonts
+        run: |
+          nix run .#getData
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Load Nix base image
+        run: |
+          docker load < result
+
+      - name: Determine version tag
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "tag=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=pr-${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build final image
+        run: |
+          VERSION="${{ steps.version.outputs.tag }}"
+          docker build -t "tilemaker-server:${VERSION}" -f Dockerfile .
+
+      - name: Export image as tarball
+        run: |
+          VERSION="${{ steps.version.outputs.tag }}"
+          docker save "tilemaker-server:${VERSION}" | gzip > tilemaker-server-${VERSION}.tar.gz
+
+      - name: Generate build report
+        run: |
+          VERSION="${{ steps.version.outputs.tag }}"
+          LOCAL_IMAGE="tilemaker-server:${VERSION}"
+
+          IMAGE_SIZE=$(docker image inspect "$LOCAL_IMAGE" --format '{{.Size}}' | awk '{printf "%.1f MB", $1/1024/1024}')
+          LAYER_COUNT=$(docker image inspect "$LOCAL_IMAGE" --format '{{len .RootFS.Layers}}')
+          IMAGE_ID=$(docker image inspect "$LOCAL_IMAGE" --format '{{.Id}}' | cut -c8-19)
+          TARBALL_SIZE=$(du -sh tilemaker-server-${VERSION}.tar.gz | awk '{print $1}')
+          STYLE_COUNT=$(find styles -name '*.json' | wc -l)
+          STYLE_LIST=$(find styles -name '*.json' -exec basename {} .json \; | sort | paste -sd ', ')
+          FONT_COUNT=$(find fonts -mindepth 1 -maxdepth 1 -type d ! -name pbf ! -name ttf | wc -l)
+
+          FONT_LIST=""
+          while IFS= read -r font; do
+            FONT_LIST="${FONT_LIST}- ${font}\n"
+          done < <(find fonts -mindepth 1 -maxdepth 1 -type d ! -name pbf ! -name ttf -exec basename {} \; | sort)
+
+          cat > build-report.md <<EOF
+
+          ---
+
+          ## Docker Image
+
+          | | |
+          |---|---|
+          | **Tag** | \`${VERSION}\` |
+          | **Image ID** | \`${IMAGE_ID}\` |
+          | **Image size** | ${IMAGE_SIZE} |
+          | **Tarball size** | ${TARBALL_SIZE} |
+          | **Layers** | ${LAYER_COUNT} |
+          | **Port** | 80 |
+
+          ### Bundled styles (${STYLE_COUNT})
+
+          ${STYLE_LIST}
+
+          ### Bundled fonts (${FONT_COUNT} families)
+
+          $(echo -e "$FONT_LIST")
+          EOF
+
+          cat build-report.md >> "$GITHUB_STEP_SUMMARY"
+
+      # --- PR: upload as short-lived artifact ---
+      - name: Upload artifact (PR)
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tilemaker-server-pr-${{ github.event.pull_request.number }}
+          path: tilemaker-server-*.tar.gz
+          retention-days: 7
+
+      # --- Release: push to GHCR and attach to release ---
+      - name: Log in to GitHub Container Registry
+        if: github.event_name == 'release'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag and push to GHCR
+        if: github.event_name == 'release'
+        run: |
+          VERSION="${{ github.event.release.tag_name }}"
+          FULL_IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          docker tag "tilemaker-server:${VERSION}" "${FULL_IMAGE}:${VERSION}"
+          docker tag "tilemaker-server:${VERSION}" "${FULL_IMAGE}:latest"
+          docker push "${FULL_IMAGE}:${VERSION}"
+          docker push "${FULL_IMAGE}:latest"
+
+      - name: Append report and attach tarball to release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          append_body: true
+          body_path: build-report.md
+          files: tilemaker-server-*.tar.gz

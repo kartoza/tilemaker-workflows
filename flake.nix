@@ -83,6 +83,65 @@
             };
           };
 
+        # Static assets bundled into the Docker image (only git-tracked files)
+        staticDir = pkgs.runCommand "tilemaker-static" { } ''
+          mkdir -p $out/styles
+          cp ${./viewer.html} $out/viewer.html
+          cp ${./styles}/*.json $out/styles/
+        '';
+
+        # Nginx config
+        nginxConf = pkgs.runCommand "nginx-conf" { } ''
+          mkdir -p $out/etc/nginx
+          cp ${./nginx.conf} $out/etc/nginx/nginx.conf
+          cp ${pkgs.nginx}/conf/mime.types $out/etc/nginx/mime.types
+        '';
+
+        # Entrypoint script for Docker
+        entrypoint = pkgs.writeShellApplication {
+          name = "tilemaker-entrypoint";
+          runtimeInputs = [
+            pkgs.mbtileserver
+            pkgs.nginx
+            pkgs.findutils
+          ];
+          text = builtins.readFile ./docker-entrypoint.sh;
+        };
+
+        # Docker base image built via Nix (styles + viewer bundled, fonts added by buildDocker)
+        dockerImage = pkgs.dockerTools.buildLayeredImage {
+          name = "tilemaker-server-base";
+          tag = "latest";
+          contents = [
+            pkgs.mbtileserver
+            pkgs.nginx
+            pkgs.bashInteractive
+            pkgs.coreutils
+            pkgs.findutils
+            nginxConf
+            entrypoint
+          ];
+          extraCommands = ''
+            mkdir -p static data tmp var/log/nginx etc
+            cp -r ${staticDir}/* static/
+            echo "root:x:0:0:root:/root:/bin/bash" > etc/passwd
+            echo "nobody:x:65534:65534:nobody:/nonexistent:/bin/false" >> etc/passwd
+            echo "root:x:0:" > etc/group
+            echo "nobody:x:65534:" >> etc/group
+            echo "nogroup:x:65533:" >> etc/group
+          '';
+          config = {
+            Cmd = [ "${entrypoint}/bin/tilemaker-entrypoint" ];
+            ExposedPorts = {
+              "80/tcp" = { };
+            };
+            Volumes = {
+              "/data" = { };
+            };
+            WorkingDir = "/";
+          };
+        };
+
       in
       {
         checks = {
@@ -91,11 +150,14 @@
 
         formatter = pkgs.nixfmt;
 
+        packages.dockerImage = dockerImage;
+
         devShells.default = pkgs.mkShell {
           buildInputs =
             coreDeps
             ++ (with pkgs; [
               mapnik
+              nginx
               nodejs
               git
               byobu
@@ -124,32 +186,27 @@
             echo "  ║    nix run .#processMalta    Generate Malta vector tiles               ║"
             echo "  ║    nix run .#processPlanet   Generate planet vector tiles              ║"
             echo "  ║    nix run .#coastline       Generate coastline tiles                  ║"
-            echo "  ║    nix run .#serve           Start mbtileserver on :8000               ║"
+            echo "  ║    nix run .#serve           Start tile server on :8080                ║"
             echo "  ║    nix run .#stopServe       Stop all running tile servers              ║"
-            echo "  ║    nix run .#viewer          Serve web viewer on :8001                 ║"
             echo "  ║    nix run .#maputnik        Launch Maputnik style editor              ║"
             echo "  ║                                                                      ║"
-            echo "  ║  View Tiles:                                                         ║"
-            echo "  ║    Web viewer    http://localhost:8001/viewer.html                    ║"
-            echo "  ║    TileJSON      http://localhost:8000/services/                      ║"
-            echo "  ║    QGIS Vector Tiles URL:                                            ║"
-            echo "  ║      http://localhost:8000/services/planet/tiles/{z}/{x}/{y}.pbf      ║"
-            echo "  ║    QGIS Style URL (any of):                                          ║"
-            echo "  ║      http://localhost:8001/styles/classic.json                        ║"
-            echo "  ║      http://localhost:8001/styles/neon.json                           ║"
-            echo "  ║      http://localhost:8001/styles/muted.json                          ║"
-            echo "  ║      http://localhost:8001/styles/african.json                        ║"
-            echo "  ║      http://localhost:8001/styles/psychedelic.json                    ║"
-            echo "  ║      http://localhost:8001/styles/sketch.json                         ║"
-            echo "  ║      http://localhost:8001/styles/kartoza.json                        ║"
-            echo "  ║      http://localhost:8001/styles/blueprint.json                      ║"
-            echo "  ║      http://localhost:8001/styles/grayscale.json                      ║"
+            echo "  ║  Docker:                                                               ║"
+            echo "  ║    make build-docker         Build Nix-based Docker image                ║"
+            echo "  ║    docker compose up         Run tile server container                   ║"
+            echo "  ║                                                                      ║"
+            echo "  ║  View Tiles (local: :8080, docker: :8080):                           ║"
+            echo "  ║    Web viewer    http://localhost:8080/viewer.html                    ║"
+            echo "  ║    TileJSON      http://localhost:8080/services/                      ║"
+            echo "  ║    QGIS Tiles    http://localhost:8080/services/planet/tiles/...      ║"
+            echo "  ║    Styles        http://localhost:8080/styles/classic.json            ║"
             echo "  ║                                                                      ║"
             echo "  ║  Development:                                                        ║"
             echo "  ║    nix run .#lint            Run shellcheck + luacheck                 ║"
             echo "  ║    nix fmt                   Format nix files                         ║"
             echo "  ║    pre-commit run -a         Run all pre-commit hooks                  ║"
             echo "  ║    Neovim: <leader>p         Project command menu                     ║"
+            echo "  ║  Help:                                                               ║"
+            echo "  ║    make help                   Show all available commands            ║"
             echo "  ║                                                                      ║"
             echo "  ║  Made with 💗 by Kartoza — https://kartoza.com                       ║"
             echo "  ╚══════════════════════════════════════════════════════════════════════╝"
@@ -183,15 +240,12 @@
             coreutils
           ]) (builtins.readFile ./process_planet.sh);
 
-          serve = mkApp "serve" [ pkgs.mbtileserver ] (builtins.readFile ./run_server.sh);
+          serve = mkApp "serve" (with pkgs; [
+            mbtileserver
+            nginx
+          ]) (builtins.readFile ./run_server.sh);
 
           stopServe = mkApp "stop-serve" [ pkgs.procps ] (builtins.readFile ./stop_server.sh);
-
-          viewer = mkApp "viewer" [ pkgs.python3 ] ''
-            echo "Opening viewer at http://localhost:8001/viewer.html"
-            echo "Make sure mbtileserver is running (nix run .#serve)"
-            python3 -m http.server 8001
-          '';
 
           maputnik = mkApp "maputnik" (with pkgs; [
             git
@@ -249,23 +303,24 @@
             echo "    nix run .#processMalta    Generate Malta vector tiles"
             echo "    nix run .#processPlanet   Generate planet vector tiles"
             echo "    nix run .#coastline       Generate coastline tiles"
-            echo "    nix run .#serve           Start mbtileserver on :8000"
+            echo "    nix run .#serve           Start tile server on :8080"
             echo "    nix run .#stopServe       Stop all running tile servers"
-            echo "    nix run .#viewer          Serve web viewer & styles on :8001"
             echo "    nix run .#maputnik        Launch Maputnik style editor"
             echo "    nix run .#lint            Run linters"
             echo ""
-            echo "  View Tiles:"
-            echo "    Web viewer:  http://localhost:8001/viewer.html"
-            echo "    TileJSON:    http://localhost:8000/services/"
+            echo "  Docker:"
+            echo "    make build-docker         Build Nix-based Docker image"
+            echo "    docker compose up         Run tile server in Docker"
+            echo ""
+            echo "  View Tiles (all via single port :8080):"
+            echo "    Web viewer:  http://localhost:8080/viewer.html"
+            echo "    TileJSON:    http://localhost:8080/services/"
+            echo "    Styles:      http://localhost:8080/styles/classic.json"
+            echo "    Fonts:       http://localhost:8080/fonts/"
             echo ""
             echo "  QGIS Vector Tiles:"
-            echo "    Tile URL:    http://localhost:8000/services/planet/tiles/{z}/{x}/{y}.pbf"
-            echo "    Style URLs:  http://localhost:8001/styles/classic.json"
-            echo "                 http://localhost:8001/styles/{neon,muted,african,psychedelic,sketch,kartoza,blueprint,grayscale}.json"
-            echo ""
-            echo "  Embed in web pages:"
-            echo "    Use any style URL with MapLibre GL JS: new maplibregl.Map({style: URL})"
+            echo "    Tile URL:    http://localhost:8080/services/planet/tiles/{z}/{x}/{y}.pbf"
+            echo "    Style URL:   http://localhost:8080/styles/classic.json"
             echo ""
             echo "Enter the dev shell with: nix develop"
             echo ""
