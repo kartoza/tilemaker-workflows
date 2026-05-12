@@ -85,9 +85,10 @@
 
         # Static assets bundled into the Docker image (only git-tracked files)
         staticDir = pkgs.runCommand "tilemaker-static" { } ''
-          mkdir -p $out/styles
+          mkdir -p $out/styles $out/sprites
           cp ${./viewer.html} $out/viewer.html
           cp ${./styles}/*.json $out/styles/
+          cp ${./sprites}/icons*.png ${./sprites}/icons*.json $out/sprites/
         '';
 
         # Nginx config
@@ -163,6 +164,13 @@
               byobu
               gotop
               jq
+
+              # Python with packages
+              (python3.withPackages (ps: [
+                ps.pillow
+                ps.cairosvg
+                ps.requests
+              ]))
 
               # Linting & formatting
               shellcheck

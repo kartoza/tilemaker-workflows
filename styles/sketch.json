@@ -1759,132 +1759,6 @@
       }
     },
     {
-      "id": "aerodrome-label",
-      "type": "symbol",
-      "source": "planet",
-      "source-layer": "aerodrome_label",
-      "minzoom": 10,
-      "layout": {
-        "text-field": [
-          "coalesce",
-          [
-            "get",
-            "name:latin"
-          ],
-          [
-            "get",
-            "name"
-          ]
-        ],
-        "text-font": [
-          "Patrick Hand Regular"
-        ],
-        "text-size": 10,
-        "text-offset": [
-          0,
-          1
-        ]
-      },
-      "paint": {
-        "text-color": "#706858",
-        "text-halo-color": "rgba(216,207,192,0.9)",
-        "text-halo-width": 1.5
-      }
-    },
-    {
-      "id": "mountain-peak",
-      "type": "symbol",
-      "source": "planet",
-      "source-layer": "mountain_peak",
-      "minzoom": 11,
-      "layout": {
-        "text-field": [
-          "concat",
-          [
-            "coalesce",
-            [
-              "get",
-              "name:latin"
-            ],
-            [
-              "get",
-              "name"
-            ]
-          ],
-          "\n",
-          [
-            "case",
-            [
-              "has",
-              "ele"
-            ],
-            [
-              "concat",
-              [
-                "get",
-                "ele"
-              ],
-              "m"
-            ],
-            ""
-          ]
-        ],
-        "text-font": [
-          "Shadows Into Light Regular"
-        ],
-        "text-size": 10,
-        "text-offset": [
-          0,
-          0.8
-        ]
-      },
-      "paint": {
-        "text-color": "#685848",
-        "text-halo-color": "rgba(216,207,192,0.9)",
-        "text-halo-width": 1.5
-      }
-    },
-    {
-      "id": "poi",
-      "type": "symbol",
-      "source": "planet",
-      "source-layer": "poi",
-      "minzoom": 14,
-      "filter": [
-        "<=",
-        "rank",
-        5
-      ],
-      "layout": {
-        "text-field": [
-          "coalesce",
-          [
-            "get",
-            "name:latin"
-          ],
-          [
-            "get",
-            "name"
-          ]
-        ],
-        "text-font": [
-          "Patrick Hand Regular"
-        ],
-        "text-size": 10,
-        "text-offset": [
-          0,
-          0.6
-        ],
-        "text-anchor": "top",
-        "text-optional": true
-      },
-      "paint": {
-        "text-color": "#706050",
-        "text-halo-color": "rgba(216,207,192,0.9)",
-        "text-halo-width": 1.5
-      }
-    },
-    {
       "id": "housenumber",
       "type": "symbol",
       "source": "planet",
@@ -2195,6 +2069,244 @@
         "text-halo-color": "rgba(216,207,192,0.9)",
         "text-halo-width": 1.5
       }
+    },
+    {
+      "id": "aerodrome-icon",
+      "type": "symbol",
+      "source": "planet",
+      "source-layer": "aerodrome_label",
+      "minzoom": 10,
+      "layout": {
+        "icon-image": "airport",
+        "icon-size": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          10,
+          0.5,
+          14,
+          0.8
+        ],
+        "text-field": [
+          "coalesce",
+          [
+            "get",
+            "name:latin"
+          ],
+          [
+            "get",
+            "name"
+          ]
+        ],
+        "text-font": [
+          "Patrick Hand Regular"
+        ],
+        "text-size": 10,
+        "text-offset": [
+          0,
+          1.5
+        ],
+        "text-anchor": "top",
+        "text-optional": true
+      },
+      "paint": {
+        "text-color": "#403020",
+        "text-halo-color": "rgba(216,207,192,0.9)",
+        "text-halo-width": 2.5,
+        "icon-opacity": 0.85
+      }
+    },
+    {
+      "id": "mountain-peak-icon",
+      "type": "symbol",
+      "source": "planet",
+      "source-layer": "mountain_peak",
+      "minzoom": 11,
+      "layout": {
+        "icon-image": "mountain",
+        "icon-size": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          11,
+          0.5,
+          14,
+          0.7
+        ],
+        "text-field": [
+          "concat",
+          [
+            "coalesce",
+            [
+              "get",
+              "name:latin"
+            ],
+            [
+              "get",
+              "name"
+            ]
+          ],
+          "\n",
+          [
+            "case",
+            [
+              "has",
+              "ele"
+            ],
+            [
+              "concat",
+              [
+                "get",
+                "ele"
+              ],
+              "m"
+            ],
+            ""
+          ]
+        ],
+        "text-font": [
+          "Patrick Hand Regular"
+        ],
+        "text-size": 10,
+        "text-offset": [
+          0,
+          1.5
+        ],
+        "text-anchor": "top"
+      },
+      "paint": {
+        "text-color": "#403020",
+        "text-halo-color": "rgba(216,207,192,0.9)",
+        "text-halo-width": 2.5,
+        "icon-opacity": 0.8
+      }
+    },
+    {
+      "id": "poi-icons",
+      "type": "symbol",
+      "source": "planet",
+      "source-layer": "poi",
+      "minzoom": 14,
+      "filter": [
+        "<=",
+        "rank",
+        5
+      ],
+      "layout": {
+        "icon-image": [
+          "match",
+          [
+            "get",
+            "subclass"
+          ],
+          "restaurant",
+          "restaurant",
+          "cafe",
+          "cafe",
+          "bar",
+          "bar",
+          "pub",
+          "beer",
+          "fast_food",
+          "fast-food",
+          "hospital",
+          "hospital",
+          "clinic",
+          "hospital",
+          "pharmacy",
+          "pharmacy",
+          "school",
+          "school",
+          "university",
+          "college",
+          "library",
+          "library",
+          "museum",
+          "museum",
+          "theatre",
+          "theatre",
+          "cinema",
+          "cinema",
+          "place_of_worship",
+          "place-of-worship",
+          "bank",
+          "bank",
+          "post_office",
+          "post",
+          "police",
+          "police",
+          "fire_station",
+          "fire-station",
+          "fuel",
+          "fuel",
+          "parking",
+          "parking",
+          "supermarket",
+          "grocery",
+          "convenience",
+          "convenience",
+          "bakery",
+          "bakery",
+          "hotel",
+          "lodging",
+          "camp_site",
+          "campsite",
+          "swimming_pool",
+          "swimming",
+          "playground",
+          "playground",
+          "garden",
+          "garden",
+          "zoo",
+          "zoo",
+          "information",
+          "information",
+          "viewpoint",
+          "viewpoint",
+          "toilets",
+          "toilet",
+          "drinking_water",
+          "drinking-water",
+          "marker"
+        ],
+        "icon-size": 0.6,
+        "text-field": [
+          "coalesce",
+          [
+            "get",
+            "name:latin"
+          ],
+          [
+            "get",
+            "name"
+          ]
+        ],
+        "text-font": [
+          "Patrick Hand Regular"
+        ],
+        "text-size": 10,
+        "text-offset": [
+          0,
+          1.3
+        ],
+        "text-anchor": "top",
+        "text-optional": true
+      },
+      "paint": {
+        "text-color": "#403020",
+        "text-halo-color": "rgba(216,207,192,0.9)",
+        "text-halo-width": 2.5,
+        "icon-opacity": 0.85
+      }
     }
-  ]
+  ],
+  "sprite": "/sprites/icons"
 }

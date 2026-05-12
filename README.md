@@ -259,24 +259,44 @@ The project includes `.exrc` and `.nvim.lua` for seamless Neovim integration:
 
 ```
 tilemaker-workflows/
-├── flake.nix                 # Nix flake (dev shell, apps, checks)
+├── flake.nix                 # Nix flake (dev shell, apps, docker image, checks)
+├── Makefile                  # Make targets for all common operations
+├── Dockerfile                # Layers fonts onto Nix-built base image
+├── docker-compose.yml        # Single-command tile server deployment
+├── docker-entrypoint.sh      # Container entrypoint (nginx + mbtileserver)
+├── nginx.conf                # Nginx config (reverse proxy + static serving)
+├── build_docker.sh           # Build & load Docker image with stats report
 ├── config.json               # Full OpenMapTiles layer configuration (z0-14)
 ├── config-coastline.json     # Coastline-only layer configuration
 ├── process.lua               # Main Lua processing script (OpenMapTiles v3)
 ├── process-coastline.lua     # Coastline/landcover remap script
-├── get_data.sh               # Download Natural Earth & OSM water data
+├── get_data.sh               # Download Natural Earth, OSM water & font data
 ├── process_malta.sh          # Malta country tile workflow
 ├── process_planet.sh         # Planet-scale tile workflow
-├── run_server.sh             # mbtileserver launcher
+├── run_server.sh             # Local tile server (nginx + mbtileserver)
 ├── run_maputnik_editor.sh    # Maputnik editor launcher
 ├── viewer.html               # MapLibre GL viewer with style switcher
-├── styles/
-│   ├── classic.json          # Warm natural tones style
-│   ├── neon.json             # Dark cyberpunk style
-│   ├── muted.json            # Muted analysis backdrop style
-│   ├── african.json          # Vibrant earth tones style
-│   ├── psychedelic.json      # Bold saturated colours style
-│   └── sketch.json           # Pencil on aged paper style
+├── generate_sprites.py       # Download Maki/Temaki icons & build sprite sheets
+├── add_icons_to_styles.py    # Add icon layers to all styles
+├── ATTRIBUTION.md            # Full data & asset provenance
+├── styles/                   # 18 MapLibre GL styles
+│   ├── classic.json          # Warm natural tones
+│   ├── kartoza.json          # Kartoza brand colours
+│   ├── biologic.json         # Biodiversity basemap
+│   ├── scifi.json            # Minority Report futuristic
+│   ├── sketch.json           # Pencil on aged paper
+│   ├── sketch2.json          # Hand-drawn Moleskine notebook
+│   ├── noir.json             # Pure black monochrome
+│   ├── pointillist.json      # Everything as icons/dots
+│   ├── places.json           # Labels-only overlay for thematic maps
+│   └── ...                   # neon, muted, african, psychedelic, etc.
+├── sprites/                  # Generated sprite sheets (Maki + Temaki + custom)
+│   ├── icons.png             # 1x sprite sheet
+│   ├── icons@2x.png          # 2x retina sprite sheet
+│   ├── icons.json            # 1x sprite index
+│   └── icons@2x.json         # 2x sprite index
+├── .github/workflows/
+│   └── docker.yml            # CI: build Docker image on PR/release
 ├── landcover/                # Natural Earth shapefiles
 ├── img/                      # Documentation screenshots
 └── maputnik/                 # MapLibre Maputnik (git submodule)
@@ -290,8 +310,29 @@ OSM PBF → [osmium optimise] → tilemaker (Lua + JSON config) → .mbtiles →
 
 ---
 
+## Data Sources & Attribution
+
+This project relies on open data and open source icon libraries. Full provenance details
+are in [ATTRIBUTION.md](ATTRIBUTION.md).
+
+| Source | License | Description |
+|--------|---------|-------------|
+| [OpenStreetMap](https://www.openstreetmap.org/copyright) | ODbL 1.0 | Map data (roads, buildings, POIs, boundaries, etc.) |
+| [Natural Earth](https://www.naturalearthdata.com/) | Public Domain | Urban areas, ice shelves, glaciers |
+| [OpenStreetMapData](https://osmdata.openstreetmap.de/) | ODbL 1.0 | Water polygons |
+| [OpenMapTiles](https://openmaptiles.org/schema/) | BSD-3-Clause | Vector tile schema |
+| [Maki Icons](https://github.com/mapbox/maki) | CC0 1.0 | ~215 cartographic point icons |
+| [Temaki Icons](https://github.com/rapideditor/temaki) | CC0 1.0 | ~557 extended map icons |
+| [Google Fonts](https://fonts.google.com/) | OFL 1.1 / Apache 2.0 | Display & handwriting fonts |
+| [MapLibre GL JS](https://maplibre.org/) | BSD-3-Clause | Web map rendering |
+| [Tilemaker](https://tilemaker.org/) | Boost 1.0 | Vector tile generation |
+
+**Map data copyright OpenStreetMap contributors.** See https://www.openstreetmap.org/copyright.
+
+---
+
 ## Credits
 
-**Tim Sutton** (tim@kartoza.com) · **Jeremy Prior** (jeremy@kartoza.com)
+**Tim Sutton** (tim@kartoza.com) &middot; **Jeremy Prior** (jeremy@kartoza.com)
 
 Made with 💗 by [Kartoza](https://kartoza.com) | [Donate!](https://github.com/sponsors/kartoza) | [GitHub](https://github.com/kartoza/tilemaker-workflows)

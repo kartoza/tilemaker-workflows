@@ -1,0 +1,417 @@
+{
+  "version": 8,
+  "name": "Places",
+  "metadata": {
+    "description": "Labels-only overlay for use on top of thematic maps. Transparent background with place names, water names, park names, POIs, aerodromes, and mountain peaks."
+  },
+  "sources": {
+    "planet": {
+      "type": "vector",
+      "tiles": ["/services/planet/tiles/{z}/{x}/{y}.pbf"],
+      "minzoom": 0,
+      "maxzoom": 14
+    }
+  },
+  "sprite": "/sprites/icons",
+  "glyphs": "/fonts/{fontstack}/{range}.pbf",
+  "layers": [
+    {
+      "id": "background",
+      "type": "background",
+      "paint": {
+        "background-color": "rgba(0,0,0,0)"
+      }
+    },
+    {
+      "id": "boundary-country-line",
+      "type": "line",
+      "source": "planet",
+      "source-layer": "boundary",
+      "filter": ["==", "admin_level", 2],
+      "paint": {
+        "line-color": "rgba(120,80,120,0.4)",
+        "line-width": ["interpolate", ["linear"], ["zoom"], 0, 0.5, 5, 1.2, 10, 2],
+        "line-dasharray": [4, 3]
+      }
+    },
+    {
+      "id": "boundary-state-line",
+      "type": "line",
+      "source": "planet",
+      "source-layer": "boundary",
+      "filter": ["==", "admin_level", 4],
+      "minzoom": 4,
+      "paint": {
+        "line-color": "rgba(120,80,120,0.25)",
+        "line-width": 0.8,
+        "line-dasharray": [6, 4]
+      }
+    },
+    {
+      "id": "waterway-label",
+      "type": "symbol",
+      "source": "planet",
+      "source-layer": "waterway",
+      "filter": ["has", "name:latin"],
+      "minzoom": 10,
+      "layout": {
+        "symbol-placement": "line",
+        "text-field": ["coalesce", ["get", "name:latin"], ["get", "name"]],
+        "text-font": ["Noto Sans Italic"],
+        "text-size": ["interpolate", ["linear"], ["zoom"], 10, 9, 14, 12],
+        "text-max-angle": 30,
+        "text-padding": 10
+      },
+      "paint": {
+        "text-color": "#2060a0",
+        "text-halo-color": "rgba(255,255,255,0.85)",
+        "text-halo-width": 1.5
+      }
+    },
+    {
+      "id": "water-name-label",
+      "type": "symbol",
+      "source": "planet",
+      "source-layer": "water_name",
+      "minzoom": 6,
+      "layout": {
+        "text-field": ["coalesce", ["get", "name:latin"], ["get", "name"]],
+        "text-font": ["Noto Sans Italic"],
+        "text-size": ["interpolate", ["linear"], ["zoom"], 6, 10, 14, 14],
+        "text-letter-spacing": 0.1,
+        "text-max-width": 10
+      },
+      "paint": {
+        "text-color": "#2060a0",
+        "text-halo-color": "rgba(255,255,255,0.85)",
+        "text-halo-width": 1.5
+      }
+    },
+    {
+      "id": "park-label",
+      "type": "symbol",
+      "source": "planet",
+      "source-layer": "park",
+      "minzoom": 11,
+      "layout": {
+        "icon-image": "park",
+        "icon-size": 0.5,
+        "text-field": ["coalesce", ["get", "name:latin"], ["get", "name"]],
+        "text-font": ["Noto Sans Italic"],
+        "text-size": 10,
+        "text-offset": [0, 1.3],
+        "text-anchor": "top",
+        "text-optional": true,
+        "text-max-width": 8
+      },
+      "paint": {
+        "text-color": "#2a7a2a",
+        "text-halo-color": "rgba(255,255,255,0.85)",
+        "text-halo-width": 1.5,
+        "icon-opacity": 0.8
+      }
+    },
+    {
+      "id": "road-label-major",
+      "type": "symbol",
+      "source": "planet",
+      "source-layer": "transportation_name",
+      "filter": ["any",
+        ["==", "class", "motorway"],
+        ["==", "class", "trunk"],
+        ["==", "class", "primary"]
+      ],
+      "minzoom": 10,
+      "layout": {
+        "symbol-placement": "line",
+        "text-field": ["coalesce", ["get", "name:latin"], ["get", "name"]],
+        "text-font": ["Noto Sans Regular"],
+        "text-size": ["interpolate", ["linear"], ["zoom"], 10, 9, 14, 13],
+        "text-max-angle": 30,
+        "text-padding": 5
+      },
+      "paint": {
+        "text-color": "#505050",
+        "text-halo-color": "rgba(255,255,255,0.85)",
+        "text-halo-width": 2
+      }
+    },
+    {
+      "id": "road-label-secondary",
+      "type": "symbol",
+      "source": "planet",
+      "source-layer": "transportation_name",
+      "filter": ["any", ["==", "class", "secondary"], ["==", "class", "tertiary"]],
+      "minzoom": 13,
+      "layout": {
+        "symbol-placement": "line",
+        "text-field": ["coalesce", ["get", "name:latin"], ["get", "name"]],
+        "text-font": ["Noto Sans Regular"],
+        "text-size": 10,
+        "text-max-angle": 30,
+        "text-padding": 5
+      },
+      "paint": {
+        "text-color": "#606060",
+        "text-halo-color": "rgba(255,255,255,0.85)",
+        "text-halo-width": 1.5
+      }
+    },
+    {
+      "id": "aerodrome-label",
+      "type": "symbol",
+      "source": "planet",
+      "source-layer": "aerodrome_label",
+      "minzoom": 8,
+      "layout": {
+        "icon-image": "airport",
+        "icon-size": ["interpolate", ["linear"], ["zoom"], 8, 0.4, 14, 0.7],
+        "text-field": ["coalesce", ["get", "name:latin"], ["get", "name"]],
+        "text-font": ["Noto Sans Regular"],
+        "text-size": ["interpolate", ["linear"], ["zoom"], 8, 9, 14, 12],
+        "text-offset": [0, 1.5],
+        "text-anchor": "top"
+      },
+      "paint": {
+        "text-color": "#404080",
+        "text-halo-color": "rgba(255,255,255,0.85)",
+        "text-halo-width": 1.5,
+        "icon-opacity": 0.8
+      }
+    },
+    {
+      "id": "mountain-peak-label",
+      "type": "symbol",
+      "source": "planet",
+      "source-layer": "mountain_peak",
+      "minzoom": 9,
+      "layout": {
+        "icon-image": "mountain",
+        "icon-size": ["interpolate", ["linear"], ["zoom"], 9, 0.4, 14, 0.6],
+        "text-field": ["concat",
+          ["coalesce", ["get", "name:latin"], ["get", "name"]],
+          "\n",
+          ["case", ["has", "ele"], ["concat", ["get", "ele"], "m"], ""]
+        ],
+        "text-font": ["Noto Sans Regular"],
+        "text-size": ["interpolate", ["linear"], ["zoom"], 9, 9, 14, 11],
+        "text-offset": [0, 1.5],
+        "text-anchor": "top"
+      },
+      "paint": {
+        "text-color": "#5a4020",
+        "text-halo-color": "rgba(255,255,255,0.85)",
+        "text-halo-width": 1.5,
+        "icon-opacity": 0.8
+      }
+    },
+    {
+      "id": "poi-label",
+      "type": "symbol",
+      "source": "planet",
+      "source-layer": "poi",
+      "minzoom": 14,
+      "filter": ["<=", "rank", 5],
+      "layout": {
+        "icon-image": [
+          "match", ["get", "subclass"],
+          "restaurant", "restaurant",
+          "cafe", "cafe",
+          "bar", "bar",
+          "pub", "beer",
+          "fast_food", "fast-food",
+          "hospital", "hospital",
+          "clinic", "hospital",
+          "pharmacy", "pharmacy",
+          "school", "school",
+          "university", "college",
+          "library", "library",
+          "museum", "museum",
+          "theatre", "theatre",
+          "cinema", "cinema",
+          "place_of_worship", "place-of-worship",
+          "bank", "bank",
+          "post_office", "post",
+          "police", "police",
+          "fire_station", "fire-station",
+          "fuel", "fuel",
+          "parking", "parking",
+          "supermarket", "grocery",
+          "convenience", "convenience",
+          "bakery", "bakery",
+          "hotel", "lodging",
+          "camp_site", "campsite",
+          "swimming_pool", "swimming",
+          "playground", "playground",
+          "garden", "garden",
+          "zoo", "zoo",
+          "information", "information",
+          "viewpoint", "viewpoint",
+          "toilets", "toilet",
+          "drinking_water", "drinking-water",
+          "marker"
+        ],
+        "icon-size": 0.55,
+        "text-field": ["coalesce", ["get", "name:latin"], ["get", "name"]],
+        "text-font": ["Noto Sans Regular"],
+        "text-size": 10,
+        "text-offset": [0, 1.3],
+        "text-anchor": "top",
+        "text-optional": true
+      },
+      "paint": {
+        "text-color": "#505050",
+        "text-halo-color": "rgba(255,255,255,0.85)",
+        "text-halo-width": 1.5,
+        "icon-opacity": 0.8
+      }
+    },
+    {
+      "id": "housenumber-label",
+      "type": "symbol",
+      "source": "planet",
+      "source-layer": "housenumber",
+      "minzoom": 14,
+      "layout": {
+        "text-field": "{housenumber}",
+        "text-font": ["Noto Sans Regular"],
+        "text-size": 9
+      },
+      "paint": {
+        "text-color": "#808080",
+        "text-halo-color": "rgba(255,255,255,0.8)",
+        "text-halo-width": 1
+      }
+    },
+    {
+      "id": "place-country",
+      "type": "symbol",
+      "source": "planet",
+      "source-layer": "place",
+      "filter": ["==", "class", "country"],
+      "minzoom": 1,
+      "maxzoom": 7,
+      "layout": {
+        "text-field": ["coalesce", ["get", "name:latin"], ["get", "name"]],
+        "text-font": ["Noto Sans Bold"],
+        "text-size": ["interpolate", ["linear"], ["zoom"], 1, 11, 4, 18, 6, 24],
+        "text-transform": "uppercase",
+        "text-letter-spacing": 0.15,
+        "text-max-width": 8
+      },
+      "paint": {
+        "text-color": "#303030",
+        "text-halo-color": "rgba(255,255,255,0.9)",
+        "text-halo-width": 2.5
+      }
+    },
+    {
+      "id": "place-state",
+      "type": "symbol",
+      "source": "planet",
+      "source-layer": "place",
+      "filter": ["==", "class", "state"],
+      "minzoom": 4,
+      "maxzoom": 9,
+      "layout": {
+        "text-field": ["coalesce", ["get", "name:latin"], ["get", "name"]],
+        "text-font": ["Noto Sans Regular"],
+        "text-size": ["interpolate", ["linear"], ["zoom"], 4, 10, 8, 16],
+        "text-transform": "uppercase",
+        "text-letter-spacing": 0.08,
+        "text-max-width": 8
+      },
+      "paint": {
+        "text-color": "#505050",
+        "text-halo-color": "rgba(255,255,255,0.9)",
+        "text-halo-width": 2
+      }
+    },
+    {
+      "id": "place-city",
+      "type": "symbol",
+      "source": "planet",
+      "source-layer": "place",
+      "filter": ["==", "class", "city"],
+      "minzoom": 4,
+      "layout": {
+        "icon-image": "circle",
+        "icon-size": ["interpolate", ["linear"], ["zoom"], 4, 0.3, 12, 0.5],
+        "text-field": ["coalesce", ["get", "name:latin"], ["get", "name"]],
+        "text-font": ["Noto Sans Bold"],
+        "text-size": ["interpolate", ["linear"], ["zoom"], 4, 12, 8, 18, 12, 24],
+        "text-offset": [0, 0.8],
+        "text-anchor": "top",
+        "text-max-width": 8
+      },
+      "paint": {
+        "text-color": "#1a1a1a",
+        "text-halo-color": "rgba(255,255,255,0.9)",
+        "text-halo-width": 2.5,
+        "icon-opacity": 0.7
+      }
+    },
+    {
+      "id": "place-town",
+      "type": "symbol",
+      "source": "planet",
+      "source-layer": "place",
+      "filter": ["==", "class", "town"],
+      "minzoom": 7,
+      "layout": {
+        "icon-image": "circle",
+        "icon-size": 0.25,
+        "text-field": ["coalesce", ["get", "name:latin"], ["get", "name"]],
+        "text-font": ["Noto Sans Regular"],
+        "text-size": ["interpolate", ["linear"], ["zoom"], 7, 11, 12, 16],
+        "text-offset": [0, 0.8],
+        "text-anchor": "top",
+        "text-max-width": 8
+      },
+      "paint": {
+        "text-color": "#303030",
+        "text-halo-color": "rgba(255,255,255,0.9)",
+        "text-halo-width": 2,
+        "icon-opacity": 0.6
+      }
+    },
+    {
+      "id": "place-village",
+      "type": "symbol",
+      "source": "planet",
+      "source-layer": "place",
+      "filter": ["==", "class", "village"],
+      "minzoom": 10,
+      "layout": {
+        "text-field": ["coalesce", ["get", "name:latin"], ["get", "name"]],
+        "text-font": ["Noto Sans Regular"],
+        "text-size": ["interpolate", ["linear"], ["zoom"], 10, 10, 14, 14],
+        "text-max-width": 8
+      },
+      "paint": {
+        "text-color": "#404040",
+        "text-halo-color": "rgba(255,255,255,0.9)",
+        "text-halo-width": 2
+      }
+    },
+    {
+      "id": "place-hamlet",
+      "type": "symbol",
+      "source": "planet",
+      "source-layer": "place",
+      "filter": ["any", ["==", "class", "hamlet"], ["==", "class", "suburb"], ["==", "class", "neighbourhood"]],
+      "minzoom": 12,
+      "layout": {
+        "text-field": ["coalesce", ["get", "name:latin"], ["get", "name"]],
+        "text-font": ["Noto Sans Regular"],
+        "text-size": 11,
+        "text-max-width": 8
+      },
+      "paint": {
+        "text-color": "#505050",
+        "text-halo-color": "rgba(255,255,255,0.85)",
+        "text-halo-width": 1.5
+      }
+    }
+  ]
+}

@@ -15,6 +15,7 @@ jobs:
     permissions:
       contents: write
       packages: write
+      pull-requests: write
 
     steps:
       - name: Checkout
@@ -62,6 +63,7 @@ jobs:
           docker save "tilemaker-server:${VERSION}" | gzip > tilemaker-server-${VERSION}.tar.gz
 
       - name: Generate build report
+        id: report
         run: |
           VERSION="${{ steps.version.outputs.tag }}"
           LOCAL_IMAGE="tilemaker-server:${VERSION}"
@@ -79,8 +81,10 @@ jobs:
             FONT_LIST="${FONT_LIST}- ${font}\n"
           done < <(find fonts -mindepth 1 -maxdepth 1 -type d ! -name pbf ! -name ttf -exec basename {} \; | sort)
 
-          cat > build-report.md <<EOF
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
+          # Build report for step summary and release notes
+          cat > build-report.md <<EOF
           ---
 
           ## Docker Image
@@ -103,9 +107,41 @@ jobs:
           $(echo -e "$FONT_LIST")
           EOF
 
+          # Build PR comment body (includes artifact download link)
+          cat > pr-comment.md <<PREOF
+          ## Docker Image Build
+
+          | | |
+          |---|---|
+          | **Tag** | \`${VERSION}\` |
+          | **Image ID** | \`${IMAGE_ID}\` |
+          | **Image size** | ${IMAGE_SIZE} |
+          | **Tarball** | ${TARBALL_SIZE} |
+          | **Layers** | ${LAYER_COUNT} |
+          | **Styles** | ${STYLE_COUNT} |
+          | **Fonts** | ${FONT_COUNT} families |
+
+          ### Download
+
+          [Download artifact from workflow run](${RUN_URL}) (expires in 7 days)
+
+          \`\`\`bash
+          # Load the image after downloading
+          docker load < tilemaker-server-${VERSION}.tar.gz
+          docker run -d -p 8080:80 -v ./output:/data:ro tilemaker-server:${VERSION}
+          \`\`\`
+
+          ### Bundled styles
+
+          ${STYLE_LIST}
+
+          ---
+          *Built from commit \`${{ github.sha }}\` | [Workflow run](${RUN_URL})*
+          PREOF
+
           cat build-report.md >> "$GITHUB_STEP_SUMMARY"
 
-      # --- PR: upload as short-lived artifact ---
+      # --- PR: upload artifact and post/update comment ---
       - name: Upload artifact (PR)
         if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4
@@ -113,6 +149,25 @@ jobs:
           name: tilemaker-server-pr-${{ github.event.pull_request.number }}
           path: tilemaker-server-*.tar.gz
           retention-days: 7
+          overwrite: true
+
+      - name: Find existing PR comment
+        if: github.event_name == 'pull_request'
+        uses: peter-evans/find-comment@v3
+        id: find-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: github-actions[bot]
+          body-includes: "## Docker Image Build"
+
+      - name: Post or update PR comment
+        if: github.event_name == 'pull_request'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          edit-mode: replace
+          body-path: pr-comment.md
 
       # --- Release: push to GHCR and attach to release ---
       - name: Log in to GitHub Container Registry

@@ -1,0 +1,21 @@
+{
+  "generated": "2026-05-12",
+  "total_icons": 790,
+  "sources": {
+    "maki": {
+      "repository": "https://github.com/mapbox/maki",
+      "license": "CC0-1.0",
+      "description": "Mapbox cartographic icons for map POIs"
+    },
+    "temaki": {
+      "repository": "https://github.com/rapideditor/temaki",
+      "license": "CC0-1.0",
+      "description": "Extended cartographic icons (companion to Maki)"
+    },
+    "custom": {
+      "description": "Hand-drawn cartographic icons for landcover, places, and infrastructure",
+      "license": "CC0-1.0",
+      "count": 18
+    }
+  }
+}
