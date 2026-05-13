@@ -55,7 +55,11 @@ jobs:
       - name: Build final image
         run: |
           VERSION="${{ steps.version.outputs.tag }}"
-          docker build -t "tilemaker-server:${VERSION}" -f Dockerfile .
+          docker build \
+            --label "org.opencontainers.image.version=${VERSION}" \
+            --label "org.opencontainers.image.revision=${{ github.sha }}" \
+            --label "org.opencontainers.image.created=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            -t "tilemaker-server:${VERSION}" -f Dockerfile .
 
       - name: Export image as tarball
         run: |
@@ -83,6 +87,8 @@ jobs:
 
           RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
+          GHCR_URL="https://github.com/kartoza/tilemaker-workflows/pkgs/container/tilemaker-workflows"
+
           # Build report for step summary and release notes
           cat > build-report.md <<EOF
           ---
@@ -91,12 +97,41 @@ jobs:
 
           | | |
           |---|---|
+          | **Registry** | [\`ghcr.io/kartoza/tilemaker-workflows\`](${GHCR_URL}) |
           | **Tag** | \`${VERSION}\` |
           | **Image ID** | \`${IMAGE_ID}\` |
           | **Image size** | ${IMAGE_SIZE} |
           | **Tarball size** | ${TARBALL_SIZE} |
           | **Layers** | ${LAYER_COUNT} |
           | **Port** | 80 |
+
+          ### Quick start
+
+          \`\`\`bash
+          # Pull the image
+          docker pull ghcr.io/kartoza/tilemaker-workflows:${VERSION}
+
+          # Run with your .mbtiles directory
+          docker run -d -p 8080:80 -v /path/to/tiles:/data:ro ghcr.io/kartoza/tilemaker-workflows:${VERSION}
+
+          # Browse
+          #   Viewer:   http://localhost:8080/viewer.html
+          #   TileJSON: http://localhost:8080/services/
+          #   Styles:   http://localhost:8080/styles/
+          #   Fonts:    http://localhost:8080/fonts/
+          \`\`\`
+
+          ### Docker Compose
+
+          \`\`\`yaml
+          services:
+            tilemaker-server:
+              image: ghcr.io/kartoza/tilemaker-workflows:${VERSION}
+              ports:
+                - "8080:80"
+              volumes:
+                - ./output:/data:ro
+          \`\`\`
 
           ### Bundled styles (${STYLE_COUNT})
 
