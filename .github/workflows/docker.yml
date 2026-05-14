@@ -16,6 +16,7 @@ jobs:
       contents: write
       packages: write
       pull-requests: write
+      security-events: write
 
     steps:
       - name: Checkout
@@ -66,6 +67,244 @@ jobs:
           VERSION="${{ steps.version.outputs.tag }}"
           docker save "tilemaker-server:${VERSION}" | gzip > tilemaker-server-${VERSION}.tar.gz
 
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: "tilemaker-server:${{ steps.version.outputs.tag }}"
+          format: spdx-json
+          output-file: sbom.spdx.json
+
+      - name: Generate SBOM markdown table
+        run: |
+          # Install syft for the table output (sbom-action only writes file)
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+
+          VERSION="${{ steps.version.outputs.tag }}"
+
+          # Generate JSON listing for parsing
+          syft "tilemaker-server:${VERSION}" -o json > sbom-raw.json
+
+          # Build a markdown table from the SBOM
+          cat > sbom-table.md <<'HEADER'
+          ### Software Bill of Materials (SBOM)
+
+          <details>
+          <summary>Click to expand full SBOM</summary>
+
+          | Package | Version | Type | License | Upstream |
+          |---------|---------|------|---------|----------|
+          HEADER
+
+          # Parse the syft JSON output into a markdown table
+          # Each artifact has: name, version, type, licenses[], metadata.url/homepage
+          python3 - sbom-raw.json >> sbom-table.md <<'PYEOF'
+          import json, sys
+
+          with open(sys.argv[1]) as f:
+              data = json.load(f)
+
+          seen = set()
+          rows = []
+
+          for art in data.get("artifacts", []):
+              name = art.get("name", "unknown")
+              version = art.get("version", "")
+              pkg_type = art.get("type", "")
+
+              # Extract licenses
+              licenses = []
+              for lic in art.get("licenses", []):
+                  val = lic.get("value", "") or lic.get("spdxExpression", "")
+                  if val:
+                      licenses.append(val)
+              lic_str = ", ".join(licenses) if licenses else "-"
+
+              # Extract upstream URL from metadata
+              url = ""
+              meta = art.get("metadata", {}) or {}
+              for key in ("homepage", "url", "source", "upstream"):
+                  if meta.get(key):
+                      url = meta[key]
+                      break
+              # Try purl as fallback for upstream reference
+              if not url:
+                  for loc in art.get("locations", []):
+                      pass  # locations are file paths, not URLs
+                  purl = art.get("purl", "")
+                  if purl:
+                      url = purl
+
+              # Deduplicate
+              dedupe_key = f"{name}:{version}"
+              if dedupe_key in seen:
+                  continue
+              seen.add(dedupe_key)
+
+              url_cell = f"[link]({url})" if url and url.startswith("http") else (f"`{url}`" if url else "-")
+              rows.append((name, version, pkg_type, lic_str, url_cell))
+
+          # Sort by type then name
+          rows.sort(key=lambda r: (r[2], r[0].lower()))
+
+          for name, version, pkg_type, lic_str, url_cell in rows:
+              # Escape pipe characters in values
+              name = name.replace("|", "\\|")
+              version = version.replace("|", "\\|")
+              lic_str = lic_str.replace("|", "\\|")
+              print(f"| {name} | {version} | {pkg_type} | {lic_str} | {url_cell} |")
+          PYEOF
+
+          cat >> sbom-table.md <<'FOOTER'
+
+          </details>
+
+          > Full SBOM in SPDX JSON format is attached as a build artifact.
+          FOOTER
+
+      - name: Scan for CVEs (JSON)
+        uses: anchore/scan-action@v6
+        id: cve-scan
+        with:
+          sbom: sbom.spdx.json
+          output-format: json
+          fail-build: false
+
+      - name: Scan for CVEs (SARIF)
+        uses: anchore/scan-action@v6
+        id: cve-sarif
+        with:
+          sbom: sbom.spdx.json
+          output-format: sarif
+          fail-build: false
+
+      - name: Upload SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: ${{ steps.cve-sarif.outputs.sarif }}
+
+      - name: Generate CVE markdown table
+        run: |
+          SCAN_FILE="${{ steps.cve-scan.outputs.json }}"
+
+          python3 - "$SCAN_FILE" > cve-table.md <<'PYEOF'
+          import json, sys
+
+          with open(sys.argv[1]) as f:
+              data = json.load(f)
+
+          matches = data.get("matches", [])
+
+          if not matches:
+              print("### Vulnerability Scan")
+              print("")
+              print("No known CVEs detected in this image.")
+              sys.exit(0)
+
+          # Severity ordering for sorting
+          sev_order = {"Critical": 0, "High": 1, "Medium": 2, "Low": 3, "Negligible": 4, "Unknown": 5}
+
+          rows = []
+          seen = set()
+
+          for match in matches:
+              vuln = match.get("vulnerability", {})
+              cve_id = vuln.get("id", "unknown")
+              severity = vuln.get("severity", "Unknown")
+
+              # Get the NVD / vendor URL
+              urls = vuln.get("urls", [])
+              # Prefer NVD link, fall back to first URL
+              nvd_url = ""
+              for u in urls:
+                  if "nvd.nist.gov" in u:
+                      nvd_url = u
+                      break
+              if not nvd_url and urls:
+                  nvd_url = urls[0]
+
+              # Get CVSS score if available
+              cvss = ""
+              for entry in vuln.get("cvss", []):
+                  score = entry.get("metrics", {}).get("baseScore")
+                  if score:
+                      cvss = str(score)
+                      break
+
+              # Affected package
+              artifact = match.get("artifact", {})
+              pkg_name = artifact.get("name", "unknown")
+              pkg_version = artifact.get("version", "")
+              pkg_type = artifact.get("type", "")
+
+              # Fixed-in version
+              fix = vuln.get("fix", {})
+              fixed_versions = fix.get("versions", [])
+              fixed_in = ", ".join(fixed_versions) if fixed_versions else "-"
+              fix_state = fix.get("state", "")
+
+              # Description (truncate for table readability)
+              desc = vuln.get("description", "")
+              if len(desc) > 120:
+                  desc = desc[:117] + "..."
+
+              dedupe_key = f"{cve_id}:{pkg_name}"
+              if dedupe_key in seen:
+                  continue
+              seen.add(dedupe_key)
+
+              rows.append((severity, cvss, cve_id, nvd_url, pkg_name, pkg_version,
+                           pkg_type, fixed_in, fix_state, desc))
+
+          # Sort by severity (critical first), then CVE ID
+          rows.sort(key=lambda r: (sev_order.get(r[0], 5), r[2]))
+
+          # Count by severity
+          counts = {}
+          for r in rows:
+              counts[r[0]] = counts.get(r[0], 0) + 1
+          summary_parts = []
+          for sev in ["Critical", "High", "Medium", "Low", "Negligible", "Unknown"]:
+              if sev in counts:
+                  summary_parts.append(f"**{counts[sev]} {sev}**")
+
+          print("### Vulnerability Scan")
+          print("")
+          print(f"Found {len(rows)} known CVE(s): {', '.join(summary_parts)}")
+          print("")
+          print("<details>")
+          print("<summary>Click to expand CVE details</summary>")
+          print("")
+          print("| Severity | CVSS | CVE | Package | Version | Fixed In | Description |")
+          print("|----------|------|-----|---------|---------|----------|-------------|")
+
+          for sev, cvss, cve_id, nvd_url, pkg_name, pkg_ver, pkg_type, fixed_in, fix_state, desc in rows:
+              # Severity badge
+              sev_icon = {"Critical": "🔴", "High": "🟠", "Medium": "🟡", "Low": "🔵", "Negligible": "⚪"}.get(sev, "⚪")
+              sev_cell = f"{sev_icon} {sev}"
+
+              cve_cell = f"[{cve_id}]({nvd_url})" if nvd_url else cve_id
+              cvss_cell = cvss if cvss else "-"
+
+              # Escape pipes
+              for val in [desc]:
+                  val = val.replace("|", "\\|")
+              desc = desc.replace("|", "\\|")
+
+              print(f"| {sev_cell} | {cvss_cell} | {cve_cell} | {pkg_name} | {pkg_ver} | {fixed_in} | {desc} |")
+
+          print("")
+          print("</details>")
+          print("")
+
+          # Impact note
+          print("> **Impact assessment:** This container runs nginx and mbtileserver to serve")
+          print("> static vector tiles over HTTP. It does not process user-uploaded files, execute")
+          print("> dynamic code, or connect to databases. CVEs in libraries not exercised by these")
+          print("> services may have reduced practical impact. Review each CVE in the context of")
+          print("> your deployment before acting.")
+          PYEOF
+
       - name: Generate build report
         id: report
         run: |
@@ -87,7 +326,7 @@ jobs:
 
           RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
-          GHCR_URL="https://github.com/kartoza/tilemaker-workflows/pkgs/container/tilemaker-workflows"
+          GHCR_URL="https://github.com/${{ github.repository }}/pkgs/container/${{ github.event.repository.name }}"
 
           # Build report for step summary and release notes
           cat > build-report.md <<EOF
@@ -97,7 +336,7 @@ jobs:
 
           | | |
           |---|---|
-          | **Registry** | [\`ghcr.io/kartoza/tilemaker-workflows\`](${GHCR_URL}) |
+          | **Registry** | [\`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}\`](${GHCR_URL}) |
           | **Tag** | \`${VERSION}\` |
           | **Image ID** | \`${IMAGE_ID}\` |
           | **Image size** | ${IMAGE_SIZE} |
@@ -109,10 +348,10 @@ jobs:
 
           \`\`\`bash
           # Pull the image
-          docker pull ghcr.io/kartoza/tilemaker-workflows:${VERSION}
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${VERSION}
 
           # Run with your .mbtiles directory
-          docker run -d -p 8080:80 -v /path/to/tiles:/data:ro ghcr.io/kartoza/tilemaker-workflows:${VERSION}
+          docker run -d -p 8080:80 -v /path/to/tiles:/data:ro ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${VERSION}
 
           # Browse
           #   Viewer:   http://localhost:8080/viewer.html
@@ -126,7 +365,7 @@ jobs:
           \`\`\`yaml
           services:
             tilemaker-server:
-              image: ghcr.io/kartoza/tilemaker-workflows:${VERSION}
+              image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${VERSION}
               ports:
                 - "8080:80"
               volumes:
@@ -140,6 +379,10 @@ jobs:
           ### Bundled fonts (${FONT_COUNT} families)
 
           $(echo -e "$FONT_LIST")
+
+          $(cat sbom-table.md)
+
+          $(cat cve-table.md)
           EOF
 
           # Build PR comment body (includes artifact download link)
@@ -170,6 +413,10 @@ jobs:
 
           ${STYLE_LIST}
 
+          $(cat sbom-table.md)
+
+          $(cat cve-table.md)
+
           ---
           *Built from commit \`${{ github.sha }}\` | [Workflow run](${RUN_URL})*
           PREOF
@@ -177,12 +424,15 @@ jobs:
           cat build-report.md >> "$GITHUB_STEP_SUMMARY"
 
       # --- PR: upload artifact and post/update comment ---
-      - name: Upload artifact (PR)
+      - name: Upload artifacts (PR)
         if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: tilemaker-server-pr-${{ github.event.pull_request.number }}
-          path: tilemaker-server-*.tar.gz
+          path: |
+            tilemaker-server-*.tar.gz
+            sbom.spdx.json
+            ${{ steps.cve-scan.outputs.json }}
           retention-days: 7
           overwrite: true
 
@@ -223,10 +473,31 @@ jobs:
           docker push "${FULL_IMAGE}:${VERSION}"
           docker push "${FULL_IMAGE}:latest"
 
+      - name: Link package to repository
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # The Dockerfile's org.opencontainers.image.source label automatically
+          # links the package to this repository on first push. This step is a
+          # belt-and-suspenders check that verifies the link exists, and sets
+          # the package to inherit repository access permissions so that all
+          # org members with repo read access can pull the image.
+          ORG="${{ github.repository_owner }}"
+          REPO="${{ github.event.repository.name }}"
+
+          # Verify the package exists and is linked
+          gh api "/orgs/${ORG}/packages/container/${REPO}" --jq '.repository.full_name' 2>/dev/null \
+            && echo "Package linked to repository successfully" \
+            || echo "::warning::Package may not be linked to repository. Verify at https://github.com/orgs/${ORG}/packages/container/${REPO}/settings and enable 'Inherit access from repository'."
+
       - name: Append report and attach tarball to release
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
           append_body: true
           body_path: build-report.md
-          files: tilemaker-server-*.tar.gz
+          files: |
+            tilemaker-server-*.tar.gz
+            sbom.spdx.json
+            ${{ steps.cve-scan.outputs.json }}

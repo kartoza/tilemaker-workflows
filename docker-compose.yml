@@ -1,6 +1,6 @@
 services:
   tilemaker-server:
-    image: tilemaker-server:latest
+    image: ${TILEMAKER_IMAGE:-tilemaker-server:latest}
     container_name: tilemaker-server
     restart: unless-stopped
     ports:
