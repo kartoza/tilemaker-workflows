@@ -73,6 +73,18 @@ build-docker: ## Build Nix-based Docker image
 
 docker-up: ## Start tile server container
 	docker compose up -d
+	@PORT=$$(docker compose port tilemaker-server 80 2>/dev/null | cut -d: -f2); \
+	echo ""; \
+	echo "  Tilemaker Server is running"; \
+	echo "  ==========================="; \
+	echo ""; \
+	echo "  Viewer:    http://localhost:$${PORT}/viewer.html"; \
+	echo "  TileJSON:  http://localhost:$${PORT}/services/"; \
+	echo "  Styles:    http://localhost:$${PORT}/styles/"; \
+	echo "  Fonts:     http://localhost:$${PORT}/fonts/"; \
+	echo ""; \
+	echo "  Stop with: make docker-down"; \
+	echo ""
 
 docker-down: ## Stop tile server container
 	docker compose down
